@@ -1,6 +1,107 @@
-@import "tailwindcss";
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
 
+/* Component-specific styles */
+@import './styles/components.css';
+@import './styles/animations.css';
+
+/* Custom Lao-inspired color scheme */
+:root {
+  --lao-purple: #6B46C1;
+  --lao-purple-dark: #553C9A;
+  --lao-purple-light: #8B5CF6;
+  --lao-gold: #F59E0B;
+  --lao-gold-light: #FCD34D;
+  --lao-red: #DC2626;
+  --lao-blue: #2563EB;
+  --lao-green: #16A34A;
+}
 
 body {
-  font-family: 'Noto Sans Lao', sans-serif;
+  font-family: 'Noto Sans Lao', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+/* Custom gradient utilities */
+.lao-gradient {
+  background: linear-gradient(135deg, var(--lao-purple) 0%, var(--lao-purple-dark) 100%);
+}
+
+.lao-gradient-gold {
+  background: linear-gradient(135deg, var(--lao-gold) 0%, #D97706 100%);
+}
+
+/* Enhanced typography */
+.text-display {
+  font-size: 3.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.text-headline {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+/* Custom shadows */
+.shadow-lao {
+  box-shadow: 0 20px 25px -5px rgba(107, 70, 193, 0.1), 0 10px 10px -5px rgba(107, 70, 193, 0.04);
+}
+
+.shadow-lao-lg {
+  box-shadow: 0 25px 50px -12px rgba(107, 70, 193, 0.25);
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ✅ FIXED: Selective transitions instead of global */
+/* Global transition on all elements causes performance issues */
+
+/* Color transitions for interactive elements */
+.transition-colors {
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Transform transitions for animations */
+.transition-transform {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Shadow transitions for hover effects */
+.transition-shadow {
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Combined transition for cards */
+.transition-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--lao-purple);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--lao-purple-dark);
 }

@@ -1,21 +1,28 @@
 import { useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
-import { toast } from 'sonner'
+import { 
+  Card, 
+  Row, 
+  Col, 
+  Statistic, 
+  Button, 
+  Progress, 
+  Table,
+  Space,
+  Tag,
+  message 
+} from 'antd'
+import { 
+  BarChartOutlined, 
+  PrinterOutlined, 
+  FileExcelOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  FileTextOutlined
+} from '@ant-design/icons'
 import { useStore } from '@/store/useStore'
-import { ClipboardList, CheckCircle, Clock, Printer, FileSpreadsheet } from 'lucide-react'
 import { exportWorkTasksToExcel } from '@/utils/exportUtils'
 import { PrintableWorkReport } from '@/components/PrintableWorkReport'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 
 export default function WorkReports() {
   const { workTasks } = useStore()
@@ -28,23 +35,22 @@ export default function WorkReports() {
 
   const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : '0'
 
+  const overdueTasks = workTasks.filter((task) => {
+    if (task.status === 'done') return false
+    const dueDate = new Date(task.dueDate)
+    return dueDate < new Date()
+  })
+
   const assigneeStats = workTasks.reduce((acc, task) => {
     if (!acc[task.assignedTo]) {
       acc[task.assignedTo] = { total: 0, completed: 0, inProgress: 0, todo: 0 }
     }
     acc[task.assignedTo].total++
-    if (task.status === 'done') {
-      acc[task.assignedTo].completed++
-    } else if (task.status === 'in-progress') {
-      acc[task.assignedTo].inProgress++
-    } else {
-      acc[task.assignedTo].todo++
-    }
+    if (task.status === 'done') acc[task.assignedTo].completed++
+    if (task.status === 'in-progress') acc[task.assignedTo].inProgress++
+    if (task.status === 'todo') acc[task.assignedTo].todo++
     return acc
   }, {} as Record<string, { total: number; completed: number; inProgress: number; todo: number }>)
-
-  const today = new Date().toISOString().split('T')[0]
-  const overdueTasks = workTasks.filter((t) => t.dueDate < today && t.status !== 'done')
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -53,7 +59,7 @@ export default function WorkReports() {
 
   const handleExportPDF = () => {
     if (workTasks.length === 0) {
-      toast.error('ບໍ່ມີຂໍ້ມູນສຳລັບ export')
+      message.error('ບໍ່ມີຂໍ້ມູນສຳລັບ export')
       return
     }
     handlePrint()
@@ -61,169 +67,180 @@ export default function WorkReports() {
 
   const handleExportExcel = () => {
     if (workTasks.length === 0) {
-      toast.error('ບໍ່ມີຂໍ້ມູນສຳລັບ export')
+      message.error('ບໍ່ມີຂໍ້ມູນສຳລັບ export')
       return
     }
-    exportWorkTasksToExcel(workTasks as any)
-    toast.success('Export Excel ສຳເລັດ')
+    try {
+      exportWorkTasksToExcel(workTasks)
+      message.success('Export Excel ສຳເລັດ')
+    } catch (error) {
+      message.error('Export Excel ບໍ່ສຳເລັດ')
+    }
   }
+
+  const assigneeColumns = [
+    {
+      title: 'ຜູ້ຮັບຜິດຊອບ',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'ທັງໝົດ',
+      dataIndex: 'total',
+      key: 'total',
+    },
+    {
+      title: 'ສຳເລັດ',
+      dataIndex: 'completed',
+      key: 'completed',
+    },
+    {
+      title: 'ກຳລັງເຮັດ',
+      dataIndex: 'inProgress',
+      key: 'inProgress',
+    },
+    {
+      title: 'ຕ້ອງເຮັດ',
+      dataIndex: 'todo',
+      key: 'todo',
+    },
+    {
+      title: 'ອັດຕາສຳເລັດ',
+      key: 'rate',
+      render: (_: any, record: any) => (
+        `${((record.completed / record.total) * 100).toFixed(1)}%`
+      ),
+    },
+  ]
+
+  const assigneeData = Object.entries(assigneeStats).map(([name, stats]) => ({
+    key: name,
+    name,
+    ...stats,
+  }))
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">ລາຍງານການເຮັດວຽກ</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            ສະຫຼຸບຂໍ້ມູນວຽກງານປະຈຳວັນ
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-green-100 rounded-lg">
+            <BarChartOutlined className="text-2xl text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">ລາຍງານວຽກງານ</h1>
+            <p className="text-sm text-gray-500">ສະຖິຕິແລະລາຍງານວຽກງານ</p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleExportPDF} variant="destructive">
-            <Printer className="w-4 h-4 mr-2" />
-            Print/PDF
+        <Space>
+          <Button
+            icon={<PrinterOutlined />}
+            onClick={handleExportPDF}
+          >
+            Print PDF
           </Button>
-          <Button onClick={handleExportExcel}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
+          <Button
+            type="primary"
+            icon={<FileExcelOutlined />}
+            onClick={handleExportExcel}
+          >
             Export Excel
           </Button>
-        </div>
+        </Space>
       </div>
 
-      {/* Hidden printable component */}
-      <div className="hidden">
-        <PrintableWorkReport ref={printRef} tasks={workTasks as any} />
-      </div>
+      {/* Statistics Cards */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="ທັງໝົດ"
+              value={totalTasks}
+              prefix={<FileTextOutlined />}
+              valueStyle={{ color: '#3b82f6' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="ສຳເລັດ"
+              value={completedTasks}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: '#10b981' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="ກຳລັງເຮັດ"
+              value={inProgressTasks}
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: '#f59e0b' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="ອັດຕາສຳເລັດ"
+              value={completionRate}
+              suffix="%"
+              valueStyle={{ color: '#7c3aed' }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-blue-500 rounded-md p-3">
-                <ClipboardList className="h-6 w-6 text-white" />
+      {/* Status Progress & Overdue Tasks */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card title="ສະຖານະວຽກງານ">
+            <Space direction="vertical" style={{ width: '100%' }} size="large">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>ສຳເລັດ</span>
+                  <span className="font-medium">{completedTasks}</span>
+                </div>
+                <Progress 
+                  percent={totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0}
+                  strokeColor="#10b981"
+                  showInfo={false}
+                />
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    ທັງໝົດ
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {totalTasks}
-                  </dd>
-                </dl>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>ກຳລັງເຮັດ</span>
+                  <span className="font-medium">{inProgressTasks}</span>
+                </div>
+                <Progress 
+                  percent={totalTasks > 0 ? (inProgressTasks / totalTasks) * 100 : 0}
+                  strokeColor="#f59e0b"
+                  showInfo={false}
+                />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>ຕ້ອງເຮັດ</span>
+                  <span className="font-medium">{todoTasks}</span>
+                </div>
+                <Progress 
+                  percent={totalTasks > 0 ? (todoTasks / totalTasks) * 100 : 0}
+                  strokeColor="#6b7280"
+                  showInfo={false}
+                />
+              </div>
+            </Space>
+          </Card>
+        </Col>
 
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-green-500 rounded-md p-3">
-                <CheckCircle className="h-6 w-6 text-white" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    ສຳເລັດ
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {completedTasks}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-yellow-500 rounded-md p-3">
-                <Clock className="h-6 w-6 text-white" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    ກຳລັງເຮັດ
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {inProgressTasks}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-purple-500 rounded-md p-3">
-                <ClipboardList className="h-6 w-6 text-white" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    ອັດຕາສຳເລັດ
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {completionRate}%
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>ສະຖານະວຽກງານ</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">ສຳເລັດ</span>
-                <span className="font-medium">{completedTasks}</span>
-              </div>
-              <Progress 
-                value={totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0}
-                className="h-2"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">ກຳລັງເຮັດ</span>
-                <span className="font-medium">{inProgressTasks}</span>
-              </div>
-              <Progress 
-                value={totalTasks > 0 ? (inProgressTasks / totalTasks) * 100 : 0}
-                className="h-2"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">ຕ້ອງເຮັດ</span>
-                <span className="font-medium">{todoTasks}</span>
-              </div>
-              <Progress 
-                value={totalTasks > 0 ? (todoTasks / totalTasks) * 100 : 0}
-                className="h-2"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>ວຽກເກີນກຳນົດ</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Col xs={24} lg={12}>
+          <Card title="ວຽກເກີນກຳນົດ">
             {overdueTasks.length === 0 ? (
-              <p className="text-gray-500 text-sm">ບໍ່ມີວຽກເກີນກຳນົດ</p>
+              <p className="text-gray-500">ບໍ່ມີວຽກເກີນກຳນົດ</p>
             ) : (
-              <div className="space-y-3">
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 {overdueTasks.slice(0, 5).map((task) => (
                   <div
                     key={task.id}
@@ -237,52 +254,32 @@ export default function WorkReports() {
                         ກຳນົດສົ່ງ: {task.dueDate}
                       </p>
                     </div>
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                      ເກີນກຳນົດ
-                    </span>
+                    <Tag color="red">ເກີນກຳນົດ</Tag>
                   </div>
                 ))}
-              </div>
+              </Space>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </Col>
+      </Row>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>ສະຖິຕິຜູ້ຮັບຜິດຊອບ</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {Object.keys(assigneeStats).length === 0 ? (
-            <p className="text-gray-500 text-sm">ຍັງບໍ່ມີຂໍ້ມູນ</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ຜູ້ຮັບຜິດຊອບ</TableHead>
-                  <TableHead>ທັງໝົດ</TableHead>
-                  <TableHead>ສຳເລັດ</TableHead>
-                  <TableHead>ກຳລັງເຮັດ</TableHead>
-                  <TableHead>ຕ້ອງເຮັດ</TableHead>
-                  <TableHead>ອັດຕາສຳເລັດ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Object.entries(assigneeStats).map(([name, stats]) => (
-                  <TableRow key={name}>
-                    <TableCell className="font-medium">{name}</TableCell>
-                    <TableCell>{stats.total}</TableCell>
-                    <TableCell>{stats.completed}</TableCell>
-                    <TableCell>{stats.inProgress}</TableCell>
-                    <TableCell>{stats.todo}</TableCell>
-                    <TableCell>{((stats.completed / stats.total) * 100).toFixed(1)}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
+      {/* Assignee Statistics */}
+      <Card title="ສະຖິຕິຜູ້ຮັບຜິດຊອບ">
+        {Object.keys(assigneeStats).length === 0 ? (
+          <p className="text-gray-500">ຍັງບໍ່ມີຂໍ້ມູນ</p>
+        ) : (
+          <Table
+            columns={assigneeColumns}
+            dataSource={assigneeData}
+            pagination={false}
+          />
+        )}
       </Card>
+
+      {/* Hidden Print Component */}
+      <div style={{ display: 'none' }}>
+        <PrintableWorkReport ref={printRef} tasks={workTasks} />
+      </div>
     </div>
   )
 }

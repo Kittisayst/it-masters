@@ -1,420 +1,377 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { toast } from 'sonner'
+import { 
+  Card, 
+  Table, 
+  Button, 
+  Modal, 
+  Form, 
+  Input, 
+  Select, 
+  Tag, 
+  Space,
+  message,
+  Popconfirm
+} from 'antd'
+import { 
+  PlusOutlined, 
+  EditOutlined, 
+  DeleteOutlined,
+  ToolOutlined,
+  ReloadOutlined
+} from '@ant-design/icons'
 import { useStore } from '@/store/useStore'
 import { googleSheetsService } from '@/services/googleSheets'
 import { formatDate, getTodayISO } from '@/utils/dateFormat'
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { repairTaskSchema, type RepairTaskFormData } from '@/lib/validations/tasks'
+import type { RepairTask } from '@/types/task'
+
+interface RepairTaskForm {
+  equipment: string
+  issue: string
+  reporter: string
+  technician: string
+  reportDate: string
+  status: 'pending' | 'in-progress' | 'completed' | 'cancelled'
+  priority: 'low' | 'medium' | 'high'
+  solution?: string
+  notes?: string
+}
+
+const { TextArea } = Input
 
 export default function Repairs() {
-  const { repairTasks, addRepairTask, updateRepairTask, deleteRepairTask } = useStore()
+  const { repairTasks, setRepairTasks, addRepairTask, updateRepairTask, deleteRepairTask, isLoading, setLoading } = useStore()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null)
+  const [form] = Form.useForm()
 
-  const form = useForm<RepairTaskFormData>({
-    resolver: zodResolver(repairTaskSchema),
-    defaultValues: {
-      equipment: '',
-      issue: '',
-      solution: '',
-      technician: '',
+  const handleRefresh = async () => {
+    setLoading(true)
+    try {
+      const data = await googleSheetsService.getRepairTasks()
+      setRepairTasks(data)
+      message.success('ໂຫຼດຂໍ້ມູນສຳເລັດ')
+    } catch (error) {
+      message.error('ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAdd = () => {
+    form.resetFields()
+    form.setFieldsValue({
+      reportDate: getTodayISO(),
       status: 'pending',
       priority: 'medium',
-    },
-  })
+    })
+    setEditingTask(null)
+    setIsFormOpen(true)
+  }
 
-  const onSubmit = async (data: RepairTaskFormData) => {
+  const handleEdit = (task: RepairTask) => {
+    form.setFieldsValue(task)
+    setEditingTask(task.id)
+    setIsFormOpen(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await googleSheetsService.deleteRepairTaskById(id)
+      deleteRepairTask(id)
+      message.success('ລຶບວຽກສ້ອມແປງສຳເລັດ')
+    } catch (error) {
+      message.error('ລຶບວຽກສ້ອມແປງບໍ່ສຳເລັດ')
+    }
+  }
+
+  const onFinish = async (values: RepairTaskForm) => {
     setIsSaving(true)
-    
     try {
       if (editingTask) {
-        const taskIndex = repairTasks.findIndex(t => t.id === editingTask)
-        if (taskIndex !== -1) {
-          await googleSheetsService.updateRepairTask(taskIndex, data)
-          updateRepairTask(editingTask, data)
-          toast.success('ອັບເດດວຽກສ້ອມແປງສຳເລັດ')
-        }
-        setEditingTask(null)
+        const updatedTask = { ...values, id: editingTask }
+        await googleSheetsService.updateRepairTaskById(editingTask, updatedTask)
+        updateRepairTask(editingTask, updatedTask)
+        message.success('ອັບເດດວຽກສ້ອມແປງສຳເລັດ')
       } else {
-        const newTask = {
-          id: Date.now().toString(),
-          date: getTodayISO(),
-          ...data,
+        const taskData = {
+          ...values,
+          date: values.reportDate || getTodayISO(),
+          solution: values.solution || '',
+          notes: values.notes || '',
         }
-        await googleSheetsService.addRepairTask(newTask)
+        const newTask = await googleSheetsService.addRepairTask(taskData)
         addRepairTask(newTask)
-        toast.success('ເພີ່ມວຽກສ້ອມແປງສຳເລັດ')
+        message.success('ເພີ່ມວຽກສ້ອມແປງສຳເລັດ')
       }
-      
-      form.reset()
       setIsFormOpen(false)
+      form.resetFields()
     } catch (error) {
-      console.error('❌ Error saving repair task:', error)
-      toast.error('ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ')
+      console.error('Error:', error)
+      message.error(editingTask ? 'ອັບເດດບໍ່ສຳເລັດ' : 'ເພີ່ມບໍ່ສຳເລັດ')
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleEdit = (task: any) => {
-    setEditingTask(task.id)
-    form.reset({
-      equipment: task.equipment,
-      issue: task.issue,
-      solution: task.solution,
-      technician: task.technician,
-      status: task.status,
-      priority: task.priority,
-    })
-    setIsFormOpen(true)
-  }
+  const columns = [
+    {
+      title: 'ວັນທີ່ແຈ້ງ',
+      dataIndex: 'reportDate',
+      key: 'reportDate',
+      width: 120,
+      render: (date: string) => formatDate(date),
+    },
+    {
+      title: 'ອຸປະກອນ',
+      dataIndex: 'equipment',
+      key: 'equipment',
+      width: 150,
+    },
+    {
+      title: 'ບັນຫາ',
+      dataIndex: 'issue',
+      key: 'issue',
+      ellipsis: true,
+    },
+    {
+      title: 'ຜູ້ແຈ້ງ',
+      dataIndex: 'reporter',
+      key: 'reporter',
+      width: 120,
+    },
+    {
+      title: 'ຊ່າງ',
+      dataIndex: 'technician',
+      key: 'technician',
+      width: 120,
+    },
+    {
+      title: 'ສະຖານະ',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (status: string) => (
+        <Tag color={
+          status === 'completed' ? 'success' :
+          status === 'in-progress' ? 'processing' :
+          status === 'pending' ? 'warning' : 'default'
+        }>
+          {status === 'completed' ? 'ສຳເລັດ' :
+           status === 'in-progress' ? 'ກຳລັງດຳເນີນການ' :
+           status === 'pending' ? 'ລໍຖ້າ' : 'ຍົກເລີກ'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'ຄວາມສຳຄັນ',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 100,
+      render: (priority: string) => (
+        <Tag color={
+          priority === 'high' ? 'red' :
+          priority === 'medium' ? 'orange' : 'default'
+        }>
+          {priority === 'high' ? 'ສູງ' :
+           priority === 'medium' ? 'ກາງ' : 'ຕ່ຳ'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'ການກະທຳ',
+      key: 'actions',
+      width: 120,
+      fixed: 'right' as const,
+      render: (_: any, record: RepairTask) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Popconfirm
+            title="ລຶບວຽກສ້ອມແປງ"
+            description="ທ່ານຕ້ອງການລຶບວຽກສ້ອມແປງນີ້ບໍ່?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="ລຶບ"
+            cancelText="ຍົກເລີກ"
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">ສ້ອມແປງໄອທີ</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            ຈັດການການສ້ອມແປງອຸປະກອນ IT
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-100 rounded-lg">
+            <ToolOutlined className="text-2xl text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">ວຽກສ້ອມແປງ</h1>
+            <p className="text-sm text-gray-500">ຈັດການວຽກສ້ອມແປງອຸປະກອນໄອທີ</p>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            setEditingTask(null)
-            form.reset({
-              equipment: '',
-              issue: '',
-              solution: '',
-              technician: '',
-              status: 'pending',
-              priority: 'medium',
-            })
-            setIsFormOpen(true)
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={isLoading}
+          >
+            ໂຫຼດໃໝ່
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
+            ເພີ່ມວຽກສ້ອມແປງ
+          </Button>
+        </Space>
+      </div>
+
+      {/* Table */}
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={repairTasks}
+          rowKey="id"
+          loading={isLoading}
+          scroll={{ x: 1200 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `ທັງໝົດ ${total} ລາຍການ`,
           }}
+        />
+      </Card>
+
+      {/* Form Modal */}
+      <Modal
+        title={editingTask ? 'ແກ້ໄຂວຽກສ້ອມແປງ' : 'ເພີ່ມວຽກສ້ອມແປງໃໝ່'}
+        open={isFormOpen}
+        onCancel={() => {
+          setIsFormOpen(false)
+          form.resetFields()
+        }}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          ເພີ່ມວຽກສ້ອມແປງ
-        </Button>
-      </div>
-
-      {/* Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingTask ? 'ແກ້ໄຂວຽກສ້ອມແປງ' : 'ເພີ່ມວຽກສ້ອມແປງໃໝ່'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingTask ? 'ແກ້ໄຂຂໍ້ມູນການສ້ອມແປງທີ່ເລືອກ' : 'ບັນທຶກການສ້ອມແປງໃໝ່ເຂົ້າລະບົບ'}
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="equipment"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ອຸປະກອນ</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ປ້ອນຊື່ອຸປະກອນ" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="technician"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ຊ່າງເຕັກນິກ</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ປ້ອນຊື່ຊ່າງ" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="issue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ບັນຫາ</FormLabel>
-                    <FormControl>
-                      <textarea
-                        placeholder="ອະທິບາຍບັນຫາທີ່ເກີດຂຶ້ນ"
-                        rows={3}
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="solution"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ວິທີແກ້ໄຂ</FormLabel>
-                    <FormControl>
-                      <textarea
-                        placeholder="ອະທິບາຍວິທີແກ້ໄຂບັນຫາ"
-                        rows={3}
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ສະຖານະ</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="ເລືອກສະຖານະ" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="pending">ລໍຖ້າ</SelectItem>
-                          <SelectItem value="in-progress">ກຳລັງດຳເນີນການ</SelectItem>
-                          <SelectItem value="completed">ສຳເລັດ</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ຄວາມສຳຄັນ</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="ເລືອກຄວາມສຳຄັນ" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">ຕໍ່າ</SelectItem>
-                          <SelectItem value="medium">ປານກາງ</SelectItem>
-                          <SelectItem value="high">ສູງ</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsFormOpen(false)
-                    setEditingTask(null)
-                    form.reset()
-                  }}
-                >
-                  ຍົກເລີກ
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ກຳລັງບັນທຶກ...
-                    </>
-                  ) : editingTask ? (
-                    'ອັບເດດ'
-                  ) : (
-                    'ບັນທຶກ'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ວັນທີ</TableHead>
-              <TableHead>ອຸປະກອນ</TableHead>
-              <TableHead>ບັນຫາ</TableHead>
-              <TableHead>ຊ່າງເຕັກນິກ</TableHead>
-              <TableHead>ສະຖານະ</TableHead>
-              <TableHead>ຄວາມສຳຄັນ</TableHead>
-              <TableHead className="text-right">ຈັດການ</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {repairTasks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  ຍັງບໍ່ມີຂໍ້ມູນວຽກສ້ອມແປງ
-                </TableCell>
-              </TableRow>
-            ) : (
-              repairTasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(task.date)}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {task.equipment}
-                  </TableCell>
-                  <TableCell>
-                    {task.issue}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {task.technician}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge
-                      variant={
-                        task.status === 'completed'
-                          ? 'default'
-                          : task.status === 'in-progress'
-                          ? 'secondary'
-                          : 'outline'
-                      }
-                    >
-                      {task.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge
-                      variant={
-                        task.priority === 'high'
-                          ? 'destructive'
-                          : task.priority === 'medium'
-                          ? 'default'
-                          : 'secondary'
-                      }
-                    >
-                      {task.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(task)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowDeleteDialog(task.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!showDeleteDialog} onOpenChange={() => setShowDeleteDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>ລຶບວຽກສ້ອມແປງ</AlertDialogTitle>
-            <AlertDialogDescription>
-              ທ່ານຕ້ອງການລຶບວຽກສ້ອມແປງນີ້ບໍ່? ການດຳເນີນການນີ້ບໍ່ສາມາດຍົກເລີກໄດ້.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>ຍົກເລີກ</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (showDeleteDialog) {
-                  try {
-                    const taskIndex = repairTasks.findIndex(t => t.id === showDeleteDialog)
-                    if (taskIndex !== -1) {
-                      await googleSheetsService.deleteRepairTask(taskIndex)
-                      deleteRepairTask(showDeleteDialog)
-                      toast.success('ລຶບວຽກສ້ອມແປງສຳເລັດ')
-                    }
-                  } catch (error) {
-                    console.error('❌ Error deleting repair task:', error)
-                    toast.error('ເກີດຂໍ້ຜິດພາດໃນການລຶບຂໍ້ມູນ')
-                  }
-                  setShowDeleteDialog(null)
-                }
-              }}
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              label="ອຸປະກອນ"
+              name="equipment"
+              rules={[{ required: true, message: 'ກະລຸນາປ້ອນອຸປະກອນ' }]}
             >
-              ລຶບ
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              label="ວັນທີ່ແຈ້ງ"
+              name="reportDate"
+              rules={[{ required: true, message: 'ກະລຸນາເລືອກວັນທີ່' }]}
+            >
+              <Input type="date" />
+            </Form.Item>
+
+            <Form.Item
+              label="ຜູ້ແຈ້ງ"
+              name="reporter"
+              rules={[{ required: true, message: 'ກະລຸນາປ້ອນຜູ້ແຈ້ງ' }]}
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              label="ຊ່າງເຕັກນິກ"
+              name="technician"
+              rules={[{ required: true, message: 'ກະລຸນາເລືອກຊ່າງ' }]}
+            >
+              <Select>
+                <Select.Option value="ຊ່າງ A">ຊ່າງ A</Select.Option>
+                <Select.Option value="ຊ່າງ B">ຊ່າງ B</Select.Option>
+                <Select.Option value="ຊ່າງ C">ຊ່າງ C</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="ສະຖານະ"
+              name="status"
+              rules={[{ required: true, message: 'ກະລຸນາເລືອກສະຖານະ' }]}
+            >
+              <Select>
+                <Select.Option value="pending">ລໍຖ້າ</Select.Option>
+                <Select.Option value="in-progress">ກຳລັງດຳເນີນການ</Select.Option>
+                <Select.Option value="completed">ສຳເລັດ</Select.Option>
+                <Select.Option value="cancelled">ຍົກເລີກ</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="ຄວາມສຳຄັນ"
+              name="priority"
+              rules={[{ required: true, message: 'ກະລຸນາເລືອກຄວາມສຳຄັນ' }]}
+            >
+              <Select>
+                <Select.Option value="low">ຕ່ຳ</Select.Option>
+                <Select.Option value="medium">ກາງ</Select.Option>
+                <Select.Option value="high">ສູງ</Select.Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            label="ບັນຫາ"
+            name="issue"
+            rules={[{ required: true, message: 'ກະລຸນາອະທິບາຍບັນຫາ' }]}
+          >
+            <TextArea rows={3} />
+          </Form.Item>
+
+          <Form.Item
+            label="ວິທີແກ້ໄຂ"
+            name="solution"
+          >
+            <TextArea rows={3} />
+          </Form.Item>
+
+          <Form.Item
+            label="ໝາຍເຫດ"
+            name="notes"
+          >
+            <TextArea rows={2} />
+          </Form.Item>
+
+          <Form.Item className="mb-0">
+            <Space className="w-full justify-end">
+              <Button onClick={() => {
+                setIsFormOpen(false)
+                form.resetFields()
+              }}>
+                ຍົກເລີກ
+              </Button>
+              <Button type="primary" htmlType="submit" loading={isSaving}>
+                {editingTask ? 'ອັບເດດ' : 'ເພີ່ມ'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

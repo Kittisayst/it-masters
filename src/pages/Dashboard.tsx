@@ -1,154 +1,128 @@
-import { useStore } from '@/store/useStore'
-import { Wrench, ClipboardList, CheckCircle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { useAllTasks } from '@/hooks/useGoogleSheetsFallback'
+import { Row, Col, Button } from 'antd'
+import { Wrench, ClipboardList, CheckCircle, RotateCcw } from 'lucide-react'
+import { useMemo } from 'react'
+import type { RepairTask, WorkTask } from '@/types/task'
+import StatsCard from '@/components/StatsCard'
+import RecentItemsCard from '@/components/RecentItemsCard'
+import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor'
 
 export default function Dashboard() {
-  const { repairTasks, workTasks } = useStore()
+  // ✅ FIXED: Performance monitoring
+  usePerformanceMonitor('Dashboard')
+  
+  // ✅ FIXED: Use SWR hooks for automatic data fetching and deduplication
+  const { repairTasks, workTasks, isLoading, mutateAll } = useAllTasks()
 
-  const stats = [
+  // ✅ FIXED: Memoize stats to prevent unnecessary re-renders
+  const stats = useMemo(() => [
     {
       name: 'ວຽກສ້ອມແປງທັງໝົດ',
       value: repairTasks.length,
       icon: Wrench,
-      color: 'bg-blue-500',
+      color: 'from-blue-500 to-blue-600',
+      bgGradient: 'from-blue-50 to-blue-100',
     },
     {
       name: 'ວຽກສ້ອມແປງສຳເລັດ',
-      value: repairTasks.filter((t) => t.status === 'completed').length,
+      value: repairTasks.filter((t: RepairTask) => t.status === 'completed').length,
       icon: CheckCircle,
-      color: 'bg-green-500',
+      color: 'from-green-500 to-green-600',
+      bgGradient: 'from-green-50 to-green-100',
     },
     {
       name: 'ວຽກງານທັງໝົດ',
       value: workTasks.length,
       icon: ClipboardList,
-      color: 'bg-purple-500',
+      color: 'from-purple-500 to-purple-600',
+      bgGradient: 'from-purple-50 to-purple-100',
     },
     {
       name: 'ວຽກງານສຳເລັດ',
-      value: workTasks.filter((t) => t.status === 'done').length,
+      value: workTasks.filter((t: WorkTask) => t.status === 'done').length,
       icon: CheckCircle,
-      color: 'bg-green-500',
+      color: 'from-green-500 to-green-600',
+      bgGradient: 'from-green-50 to-green-100',
     },
-  ]
+  ], [repairTasks.length, workTasks.length, repairTasks, workTasks])
 
-  const recentRepairs = repairTasks.slice(-5).reverse()
-  const recentTasks = workTasks.slice(-5).reverse()
+  // ✅ FIXED: Memoize recent items to prevent unnecessary re-renders
+  const recentRepairs = useMemo(() => repairTasks.slice(-5).reverse() as RepairTask[], [repairTasks])
+  const recentTasks = useMemo(() => workTasks.slice(-5).reverse() as WorkTask[], [workTasks])
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          ພາບລວມລະບົບຄຸ້ມຄອງວຽກງານໄອທີ
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            ພາບລວມລະບົບຄຸ້ມຄອງວຽກງານໄອທີ
+          </p>
+        </div>
+        <Button 
+          type="primary" 
+          icon={<RotateCcw />} 
+          onClick={mutateAll}
+          loading={isLoading}
+        >
+          Refresh
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.name}>
-              <CardContent className="p-5">
-                <div className="flex items-center">
-                  <div className={`shrink-0 ${stat.color} rounded-md p-3`}>
-                    <Icon className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <p className="text-sm font-medium text-muted-foreground truncate">
-                      {stat.name}
-                    </p>
-                    <p className="text-3xl font-semibold">
-                      {stat.value}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      <Row gutter={[16, 16]}>
+        {stats.map((stat) => (
+          <Col xs={24} sm={12} lg={6} key={stat.name} className="stagger-item">
+            <StatsCard
+              name={stat.name}
+              value={stat.value}
+              icon={stat.icon}
+              color={stat.color}
+            />
+          </Col>
+        ))}
+      </Row>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>ວຽກສ້ອມແປງລ່າສຸດ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentRepairs.length === 0 ? (
-              <p className="text-muted-foreground text-sm">ຍັງບໍ່ມີຂໍ້ມູນ</p>
-            ) : (
-              <div className="space-y-3">
-                {recentRepairs.map((repair) => (
-                  <div
-                    key={repair.id}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        {repair.equipment}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{repair.issue}</p>
-                    </div>
-                    <Badge
-                      variant={
-                        repair.status === 'completed'
-                          ? 'default'
-                          : repair.status === 'in-progress'
-                          ? 'secondary'
-                          : 'outline'
-                      }
-                    >
-                      {repair.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <RecentItemsCard
+            title="ວຽກສ້ອມແປງລ່າສຸດ"
+            items={recentRepairs.map(repair => ({
+              id: repair.id,
+              title: repair.equipment,
+              subtitle: repair.issue,
+              status: repair.status
+            }))}
+            emptyIcon={Wrench}
+            emptyMessage="ຍັງບໍ່ມີຂໍ້ມູນ"
+            headerBg="linear-gradient(90deg, var(--lao-purple) 0%, var(--lao-purple-light) 100%)"
+            hoverColor="hover:from-purple-50 hover:to-purple-100"
+            getStatusColor={(status) => 
+              status === 'completed' ? 'success' :
+              status === 'in-progress' ? 'processing' : 'default'
+            }
+          />
+        </Col>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>ວຽກງານລ່າສຸດ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentTasks.length === 0 ? (
-              <p className="text-muted-foreground text-sm">ຍັງບໍ່ມີຂໍ້ມູນ</p>
-            ) : (
-              <div className="space-y-3">
-                {recentTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        {task.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        ມອບໝາຍໃຫ້: {task.assignedTo}
-                      </p>
-                    </div>
-                    <Badge
-                      variant={
-                        task.status === 'done'
-                          ? 'default'
-                          : task.status === 'in-progress'
-                          ? 'secondary'
-                          : 'outline'
-                      }
-                    >
-                      {task.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        <Col xs={24} lg={12}>
+          <RecentItemsCard
+            title="ວຽກງານລ່າສຸດ"
+            items={recentTasks.map(task => ({
+              id: task.id,
+              title: task.title,
+              subtitle: `ມອບໝາຍໃຫ້: ${task.assignedTo}`,
+              status: task.status
+            }))}
+            emptyIcon={ClipboardList}
+            emptyMessage="ຍັງບໍ່ມີຂໍ້ມູນ"
+            headerBg="linear-gradient(90deg, var(--lao-gold) 0%, #D97706 100%)"
+            hoverColor="hover:from-yellow-50 hover:to-yellow-100"
+            getStatusColor={(status) => 
+              status === 'done' ? 'success' :
+              status === 'in-progress' ? 'processing' : 'default'
+            }
+          />
+        </Col>
+      </Row>
     </div>
   )
 }

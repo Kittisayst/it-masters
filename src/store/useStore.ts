@@ -1,38 +1,23 @@
 import { create } from 'zustand'
-
-interface RepairTask {
-  id: string
-  date: string
-  equipment: string
-  issue: string
-  solution: string
-  technician: string
-  status: 'pending' | 'in-progress' | 'completed'
-  priority: 'low' | 'medium' | 'high'
-}
-
-interface WorkTask {
-  id: string
-  date: string
-  title: string
-  description: string
-  assignedTo: string
-  status: 'todo' | 'in-progress' | 'done'
-  dueDate: string
-}
+import type { RepairTask, WorkTask } from '@/types/task'
 
 interface Store {
+  // ✅ UPDATED: Local state for optimistic updates
   repairTasks: RepairTask[]
   workTasks: WorkTask[]
   isLoading: boolean
-  setRepairTasks: (tasks: RepairTask[]) => void
-  setWorkTasks: (tasks: WorkTask[]) => void
+  
+  // CRUD operations for optimistic updates
   addRepairTask: (task: RepairTask) => void
   updateRepairTask: (id: string, task: Partial<RepairTask>) => void
   deleteRepairTask: (id: string) => void
   addWorkTask: (task: WorkTask) => void
   updateWorkTask: (id: string, task: Partial<WorkTask>) => void
   deleteWorkTask: (id: string) => void
+  
+  // Legacy methods (keep for compatibility)
+  setRepairTasks: (tasks: RepairTask[]) => void
+  setWorkTasks: (tasks: WorkTask[]) => void
   setLoading: (loading: boolean) => void
 }
 

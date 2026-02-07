@@ -1,142 +1,110 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useAuth } from '@/contexts/AuthContext'
+import { Form, Input, Button, Card, message } from 'antd'
 import { LogIn, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { loginSchema, type LoginFormData } from '@/lib/validations/auth'
+import { useAuth } from '@/contexts/AuthContext'
+import type { LoginFormData } from '@/lib/validations/auth'
 
 export default function Login() {
   const navigate = useNavigate()
   const { login } = useAuth()
-  
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-    },
-  })
+  const [form] = Form.useForm()
+  const [loading, setLoading] = useState(false)
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onFinish = async (values: LoginFormData) => {
+    setLoading(true)
     try {
-      await login(data)
-      toast.success('ເຂົ້າສູ່ລະບົບສຳເລັດ')
+      await login(values)
+      message.success('ເຂົ້າສູ່ລະບົບສຳເລັດ')
       navigate('/')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
+      message.error(err instanceof Error ? err.message : 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
+    <div 
+      className="min-h-screen bg-linear-to-br from-purple-600 via-purple-700 to-indigo-800 flex items-center justify-center p-4"
+      role="main"
+      aria-label="ໜ້າເຂົ້າສູ່ລະບົບ"
+    >
+      <div className="max-w-md w-full" role="region" aria-label="ຟອມເຂົ້າສູ່ລະບົບ">
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <LogIn className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-yellow-400 to-orange-500 rounded-full mb-4 shadow-lg">
+            <LogIn className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-white mb-2">
             ລະບົບຈັດການໄອທີ
           </h1>
-          <p className="text-gray-600">ເຂົ້າສູ່ລະບົບເພື່ອສືບຕໍ່</p>
+          <p className="text-purple-100">ເຂົ້າສູ່ລະບົບເພື່ອສືບຕໍ່</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Username */}
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ຊື່ຜູ້ໃຊ້</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="ປ້ອນຊື່ຜູ້ໃຊ້"
-                        autoFocus
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        <Card className="shadow-2xl bg-white/95 backdrop-blur-sm border-0">
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            autoComplete="off"
+          >
+            <Form.Item
+              label="ຊື່ຜູ້ໃຊ້"
+              name="username"
+              rules={[
+                { required: true, message: 'ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້' },
+                { min: 3, message: 'ຊື່ຜູ້ໃຊ້ຕ້ອງມີຢ່າງໜ້ອຍ 3 ຕົວອັກສອນ' }
+              ]}
+            >
+              <Input
+                size="large"
+                placeholder="ປ້ອນຊື່ຜູ້ໃຊ້"
+                autoFocus
+                aria-label="ຊື່ຜູ້ໃຊ້"
+                aria-describedby="username-help"
+                autoComplete="username"
               />
+            </Form.Item>
 
-              {/* Password */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ລະຫັດຜ່ານ</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="ປ້ອນລະຫັດຜ່ານ"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            <Form.Item
+              label="ລະຫັດຜ່ານ"
+              name="password"
+              rules={[
+                { required: true, message: 'ກະລຸນາປ້ອນລະຫັດຜ່ານ' },
+                { min: 6, message: 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ຕົວອັກສອນ' }
+              ]}
+            >
+              <Input.Password
+                size="large"
+                placeholder="ປ້ອນລະຫັດຜ່ານ"
+                aria-label="ລະຫັດຜ່ານ"
+                aria-describedby="password-help"
+                autoComplete="current-password"
               />
+            </Form.Item>
 
-              {/* Submit Button */}
+            <Form.Item>
               <Button
-                type="submit"
-                className="w-full"
-                disabled={form.formState.isSubmitting}
+                type="primary"
+                htmlType="submit"
+                size="large"
+                loading={loading}
+                block
+                className="btn-shine btn-bounce"
+                icon={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-5 h-5" />}
+                aria-label={loading ? 'ກຳລັງເຂົ້າສູ່ລະບົບ' : 'ເຂົ້າສູ່ລະບົບ'}
               >
-                {form.formState.isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ກຳລັງເຂົ້າສູ່ລະບົບ...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-5 h-5 mr-2" />
-                    ເຂົ້າສູ່ລະບົບ
-                  </>
-                )}
+                {loading ? 'ກຳລັງເຂົ້າສູ່ລະບົບ...' : 'ເຂົ້າສູ່ລະບົບ'}
               </Button>
-            </form>
+            </Form.Item>
           </Form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-3">ບັນຊີທົດສອບ:</p>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="bg-gray-50 p-2 rounded text-center">
-                <p className="font-semibold text-gray-700">Admin</p>
-                <p className="text-gray-600">admin / admin123</p>
-              </div>
-              <div className="bg-gray-50 p-2 rounded text-center">
-                <p className="font-semibold text-gray-700">Technician</p>
-                <p className="text-gray-600">tech1 / tech123</p>
-              </div>
-              <div className="bg-gray-50 p-2 rounded text-center">
-                <p className="font-semibold text-gray-700">User</p>
-                <p className="text-gray-600">user1 / user123</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        </Card>
 
         {/* Footer */}
-        <p className="text-center text-sm text-gray-600 mt-6">
+        <p className="text-center text-sm text-purple-100 mt-6">
           © 2024 IT Management System
         </p>
       </div>

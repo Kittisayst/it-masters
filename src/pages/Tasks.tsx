@@ -1,379 +1,357 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { toast } from 'sonner'
+import { 
+  Card, 
+  Table, 
+  Button, 
+  Modal, 
+  Form, 
+  Input, 
+  Select, 
+  Tag, 
+  Space,
+  message,
+  Popconfirm,
+  DatePicker
+} from 'antd'
+import { 
+  PlusOutlined, 
+  EditOutlined, 
+  DeleteOutlined,
+  CheckCircleOutlined,
+  ReloadOutlined
+} from '@ant-design/icons'
 import { useStore } from '@/store/useStore'
 import { googleSheetsService } from '@/services/googleSheets'
 import { formatDate, getTodayISO } from '@/utils/dateFormat'
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { workTaskSchema, type WorkTaskFormData } from '@/lib/validations/tasks'
+import type { WorkTask } from '@/types/task'
+import dayjs from 'dayjs'
+
+interface WorkTaskForm {
+  title: string
+  description: string
+  assignedTo: string
+  dueDate: any
+  status: 'todo' | 'in-progress' | 'done'
+  priority: 'low' | 'medium' | 'high'
+  notes?: string
+}
+
+const { TextArea } = Input
 
 export default function Tasks() {
-  const { workTasks, addWorkTask, updateWorkTask, deleteWorkTask } = useStore()
+  const { workTasks, setWorkTasks, addWorkTask, updateWorkTask, deleteWorkTask, isLoading, setLoading } = useStore()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null)
+  const [form] = Form.useForm()
 
-  const form = useForm<WorkTaskFormData>({
-    resolver: zodResolver(workTaskSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      assignedTo: '',
-      status: 'todo',
-      dueDate: '',
-    },
-  })
-
-  const onSubmit = async (data: WorkTaskFormData) => {
-    setIsSaving(true)
-    
+  const handleRefresh = async () => {
+    setLoading(true)
     try {
-      if (editingTask) {
-        const taskIndex = workTasks.findIndex(t => t.id === editingTask)
-        if (taskIndex !== -1) {
-          await googleSheetsService.updateWorkTask(taskIndex, data)
-          updateWorkTask(editingTask, data)
-          toast.success('ອັບເດດວຽກງານສຳເລັດ')
-        }
-        setEditingTask(null)
-      } else {
-        const newTask = {
-          id: Date.now().toString(),
-          date: getTodayISO(),
-          ...data,
-          dueDate: data.dueDate || '',
-        }
-        await googleSheetsService.addWorkTask(newTask)
-        addWorkTask(newTask)
-        toast.success('ເພີ່ມວຽກງານສຳເລັດ')
-      }
-      
-      form.reset()
-      setIsFormOpen(false)
+      const data = await googleSheetsService.getWorkTasks()
+      setWorkTasks(data)
+      message.success('ໂຫຼດຂໍ້ມູນສຳເລັດ')
     } catch (error) {
-      console.error('❌ Error saving work task:', error)
-      toast.error('ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ')
+      message.error('ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAdd = () => {
+    form.resetFields()
+    form.setFieldsValue({
+      dueDate: dayjs(),
+      status: 'todo',
+      priority: 'medium',
+    })
+    setEditingTask(null)
+    setIsFormOpen(true)
+  }
+
+  const handleEdit = (task: WorkTask) => {
+    form.setFieldsValue({
+      ...task,
+      dueDate: task.dueDate ? dayjs(task.dueDate) : null,
+    })
+    setEditingTask(task.id)
+    setIsFormOpen(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await googleSheetsService.deleteWorkTaskById(id)
+      deleteWorkTask(id)
+      message.success('ລຶບວຽກງານສຳເລັດ')
+    } catch (error) {
+      message.error('ລຶບວຽກງານບໍ່ສຳເລັດ')
+    }
+  }
+
+  const onFinish = async (values: WorkTaskForm) => {
+    setIsSaving(true)
+    try {
+      const taskData = {
+        ...values,
+        date: getTodayISO(),
+        dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : getTodayISO(),
+      }
+
+      if (editingTask) {
+        const updatedTask = { ...taskData, id: editingTask }
+        await googleSheetsService.updateWorkTaskById(editingTask, updatedTask)
+        updateWorkTask(editingTask, updatedTask)
+        message.success('ອັບເດດວຽກງານສຳເລັດ')
+      } else {
+        const newTask = await googleSheetsService.addWorkTask(taskData)
+        addWorkTask(newTask)
+        message.success('ເພີ່ມວຽກງານສຳເລັດ')
+      }
+      setIsFormOpen(false)
+      form.resetFields()
+    } catch (error) {
+      console.error('Error:', error)
+      message.error(editingTask ? 'ອັບເດດບໍ່ສຳເລັດ' : 'ເພີ່ມບໍ່ສຳເລັດ')
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleEdit = (task: any) => {
-    setEditingTask(task.id)
-    form.reset({
-      title: task.title,
-      description: task.description,
-      assignedTo: task.assignedTo,
-      status: task.status,
-      dueDate: task.dueDate,
-    })
-    setIsFormOpen(true)
-  }
+  const columns = [
+    {
+      title: 'ຫົວຂໍ້ວຽກງານ',
+      dataIndex: 'title',
+      key: 'title',
+      width: 200,
+    },
+    {
+      title: 'ລາຍລະອຽດ',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+    },
+    {
+      title: 'ຜູ້ຮັບຜິດຊອບ',
+      dataIndex: 'assignedTo',
+      key: 'assignedTo',
+      width: 150,
+    },
+    {
+      title: 'ກຳນົດສົ່ງ',
+      dataIndex: 'dueDate',
+      key: 'dueDate',
+      width: 120,
+      render: (date: string) => formatDate(date),
+    },
+    {
+      title: 'ສະຖານະ',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (status: string) => (
+        <Tag color={
+          status === 'done' ? 'success' :
+          status === 'in-progress' ? 'processing' :
+          status === 'todo' ? 'default' : 'default'
+        }>
+          {status === 'done' ? 'ສຳເລັດ' :
+           status === 'in-progress' ? 'ກຳລັງເຮັດ' :
+           status === 'todo' ? 'ຕ້ອງເຮັດ' : status}
+        </Tag>
+      ),
+    },
+    {
+      title: 'ຄວາມສຳຄັນ',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 100,
+      render: (priority: string) => (
+        <Tag color={
+          priority === 'high' ? 'red' :
+          priority === 'medium' ? 'orange' : 'default'
+        }>
+          {priority === 'high' ? 'ສູງ' :
+           priority === 'medium' ? 'ກາງ' : 'ຕ່ຳ'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'ການກະທຳ',
+      key: 'actions',
+      width: 120,
+      fixed: 'right' as const,
+      render: (_: any, record: WorkTask) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Popconfirm
+            title="ລຶບວຽກງານ"
+            description="ທ່ານຕ້ອງການລຶບວຽກງານນີ້ບໍ່?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="ລຶບ"
+            cancelText="ຍົກເລີກ"
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">ລະບົບເກັບກຳຂໍ້ມູນວຽກງານ</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            ຈັດການວຽກງານປະຈຳວັນ
-          </p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-green-100 rounded-lg">
+            <CheckCircleOutlined className="text-2xl text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">ວຽກງານ</h1>
+            <p className="text-sm text-gray-500">ຈັດການວຽກງານແລະການມອບໝາຍ</p>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            setEditingTask(null)
-            form.reset({
-              title: '',
-              description: '',
-              assignedTo: '',
-              status: 'todo',
-              dueDate: '',
-            })
-            setIsFormOpen(true)
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={isLoading}
+          >
+            ໂຫຼດໃໝ່
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
+            ເພີ່ມວຽກງານ
+          </Button>
+        </Space>
+      </div>
+
+      {/* Table */}
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={workTasks}
+          rowKey="id"
+          loading={isLoading}
+          scroll={{ x: 1200 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `ທັງໝົດ ${total} ລາຍການ`,
           }}
+        />
+      </Card>
+
+      {/* Form Modal */}
+      <Modal
+        title={editingTask ? 'ແກ້ໄຂວຽກງານ' : 'ເພີ່ມວຽກງານໃໝ່'}
+        open={isFormOpen}
+        onCancel={() => {
+          setIsFormOpen(false)
+          form.resetFields()
+        }}
+        footer={null}
+        width={700}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          ເພີ່ມວຽກງານ
-        </Button>
-      </div>
+          <Form.Item
+            label="ຫົວຂໍ້ວຽກງານ"
+            name="title"
+            rules={[{ required: true, message: 'ກະລຸນາປ້ອນຫົວຂໍ້ວຽກງານ' }]}
+          >
+            <Input />
+          </Form.Item>
 
-      {/* Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingTask ? 'ແກ້ໄຂວຽກງານ' : 'ເພີ່ມວຽກງານໃໝ່'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingTask ? 'ແກ້ໄຂຂໍ້ມູນວຽກງານທີ່ເລືອກ' : 'ສ້າງວຽກງານໃໝ່ແລະມອບໝາຍໃຫ້ຜູ້ຮັບຜິດຊອບ'}
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ຫົວຂໍ້ວຽກງານ</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ປ້ອນຫົວຂໍ້ວຽກງານ" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ລາຍລະອຽດ</FormLabel>
-                    <FormControl>
-                      <textarea
-                        placeholder="ອະທິບາຍລາຍລະອຽດວຽກງານ"
-                        rows={4}
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <FormField
-                  control={form.control}
-                  name="assignedTo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ມອບໝາຍໃຫ້</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ປ້ອນຊື່ຜູ້ຮັບຜິດຊອບ" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ສະຖານະ</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="ເລືອກສະຖານະ" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="todo">ຕ້ອງເຮັດ</SelectItem>
-                          <SelectItem value="in-progress">ກຳລັງເຮັດ</SelectItem>
-                          <SelectItem value="done">ສຳເລັດ</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ກຳນົດສົ່ງ</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsFormOpen(false)
-                    setEditingTask(null)
-                    form.reset()
-                  }}
-                >
-                  ຍົກເລີກ
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ກຳລັງບັນທຶກ...
-                    </>
-                  ) : editingTask ? (
-                    'ອັບເດດ'
-                  ) : (
-                    'ບັນທຶກ'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+          <Form.Item
+            label="ລາຍລະອຽດ"
+            name="description"
+            rules={[{ required: true, message: 'ກະລຸນາອະທິບາຍລາຍລະອຽດ' }]}
+          >
+            <TextArea rows={3} />
+          </Form.Item>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ວັນທີ</TableHead>
-              <TableHead>ຫົວຂໍ້</TableHead>
-              <TableHead>ລາຍລະອຽດ</TableHead>
-              <TableHead>ມອບໝາຍໃຫ້</TableHead>
-              <TableHead>ກຳນົດສົ່ງ</TableHead>
-              <TableHead>ສະຖານະ</TableHead>
-              <TableHead className="text-right">ຈັດການ</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {workTasks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  ຍັງບໍ່ມີຂໍ້ມູນວຽກງານ
-                </TableCell>
-              </TableRow>
-            ) : (
-              workTasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(task.date)}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap font-medium">
-                    {task.title}
-                  </TableCell>
-                  <TableCell>
-                    {task.description}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {task.assignedTo}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(task.dueDate)}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge
-                      variant={
-                        task.status === 'done'
-                          ? 'default'
-                          : task.status === 'in-progress'
-                          ? 'secondary'
-                          : 'outline'
-                      }
-                    >
-                      {task.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(task)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowDeleteDialog(task.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!showDeleteDialog} onOpenChange={() => setShowDeleteDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>ລຶບວຽກງານ</AlertDialogTitle>
-            <AlertDialogDescription>
-              ທ່ານຕ້ອງການລຶບວຽກງານນີ້ບໍ່? ການດຳເນີນການນີ້ບໍ່ສາມາດຍົກເລີກໄດ້.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>ຍົກເລີກ</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (showDeleteDialog) {
-                  try {
-                    const taskIndex = workTasks.findIndex(t => t.id === showDeleteDialog)
-                    if (taskIndex !== -1) {
-                      await googleSheetsService.deleteWorkTask(taskIndex)
-                      deleteWorkTask(showDeleteDialog)
-                      toast.success('ລຶບວຽກງານສຳເລັດ')
-                    }
-                  } catch (error) {
-                    console.error('❌ Error deleting work task:', error)
-                    toast.error('ເກີດຂໍ້ຜິດພາດໃນການລຶບຂໍ້ມູນ')
-                  }
-                  setShowDeleteDialog(null)
-                }
-              }}
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              label="ຜູ້ຮັບຜິດຊອບ"
+              name="assignedTo"
+              rules={[{ required: true, message: 'ກະລຸນາເລືອກຜູ້ຮັບຜິດຊອບ' }]}
             >
-              ລຶບ
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <Select>
+                <Select.Option value="ພະນັກງານ A">ພະນັກງານ A</Select.Option>
+                <Select.Option value="ພະນັກງານ B">ພະນັກງານ B</Select.Option>
+                <Select.Option value="ພະນັກງານ C">ພະນັກງານ C</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="ກຳນົດສົ່ງ"
+              name="dueDate"
+              rules={[{ required: true, message: 'ກະລຸນາເລືອກວັນທີ່' }]}
+            >
+              <DatePicker style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item
+              label="ສະຖານະ"
+              name="status"
+              rules={[{ required: true, message: 'ກະລຸນາເລືອກສະຖານະ' }]}
+            >
+              <Select>
+                <Select.Option value="todo">ຕ້ອງເຮັດ</Select.Option>
+                <Select.Option value="in-progress">ກຳລັງເຮັດ</Select.Option>
+                <Select.Option value="done">ສຳເລັດ</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="ຄວາມສຳຄັນ"
+              name="priority"
+            >
+              <Select>
+                <Select.Option value="low">ຕ່ຳ</Select.Option>
+                <Select.Option value="medium">ກາງ</Select.Option>
+                <Select.Option value="high">ສູງ</Select.Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            label="ໝາຍເຫດ"
+            name="notes"
+          >
+            <TextArea rows={2} />
+          </Form.Item>
+
+          <Form.Item className="mb-0">
+            <Space className="w-full justify-end">
+              <Button onClick={() => {
+                setIsFormOpen(false)
+                form.resetFields()
+              }}>
+                ຍົກເລີກ
+              </Button>
+              <Button type="primary" htmlType="submit" loading={isSaving}>
+                {editingTask ? 'ອັບເດດ' : 'ເພີ່ມ'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

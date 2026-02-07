@@ -1,48 +1,47 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Wrench, ClipboardList, FileText, BarChart3, RefreshCw, Menu, X, LogOut, User, Users } from 'lucide-react'
+import { Layout as AntLayout, Menu, Button, Avatar, Dropdown, Spin, Modal, Space } from 'antd'
+import type { MenuProps } from 'antd'
+import {
+  DashboardOutlined,
+  ToolOutlined,
+  CheckSquareOutlined,
+  FileTextOutlined,
+  BarChartOutlined,
+  UserOutlined,
+  TeamOutlined,
+  LogoutOutlined,
+  ReloadOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+} from '@ant-design/icons'
 import { useStore } from '@/store/useStore'
 import { useAuth } from '@/contexts/AuthContext'
 import { googleSheetsService } from '@/services/googleSheets'
 import { format } from 'date-fns'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+
+const { Header, Sider, Content } = AntLayout
 
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { isLoading, setRepairTasks, setWorkTasks, setLoading } = useStore()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
+    Modal.confirm({
+      title: 'ອອກຈາກລະບົບ',
+      content: 'ທ່ານຕ້ອງການອອກຈາກລະບົບບໍ່?',
+      okText: 'ອອກຈາກລະບົບ',
+      cancelText: 'ຍົກເລີກ',
+      onOk: () => {
+        logout()
+        navigate('/login')
+      },
+    })
   }
-
-  const navItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'technician', 'user'] },
-    { path: '/repairs', icon: Wrench, label: 'ສ້ອມແປງໄອທີ', roles: ['admin', 'technician'] },
-    { path: '/tasks', icon: ClipboardList, label: 'ວຽກງານ', roles: ['admin', 'technician', 'user'] },
-    { path: '/repair-reports', icon: FileText, label: 'ລາຍງານສ້ອມແປງ', roles: ['admin', 'technician'] },
-    { path: '/work-reports', icon: BarChart3, label: 'ລາຍງານວຽກງານ', roles: ['admin', 'technician', 'user'] },
-    { path: '/users', icon: Users, label: 'ຈັດການຜູ້ໃຊ້', roles: ['admin'] },
-  ]
-
-  // Filter menu items based on user role
-  const visibleNavItems = navItems.filter(item => 
-    user && item.roles.includes(user.role)
-  )
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -54,180 +53,161 @@ export default function Layout() {
       ])
       
       if (repairData && Array.isArray(repairData)) {
-        setRepairTasks(repairData as any)
+        setRepairTasks(repairData)
       }
       if (workData && Array.isArray(workData)) {
-        setWorkTasks(workData as any)
+        setWorkTasks(workData)
       }
-      console.log('✅ Refreshed data from Google Sheets')
     } catch (error) {
-      console.error('❌ Error refreshing data:', error)
-      alert('ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດຂໍ້ມູນ')
+      console.error('Error refreshing data:', error)
     } finally {
       setIsRefreshing(false)
       setLoading(false)
     }
   }
 
+  const menuItems: MenuProps['items'] = [
+    {
+      key: '/',
+      icon: <DashboardOutlined />,
+      label: <Link to="/">Dashboard</Link>,
+    },
+    user?.role !== 'user' && {
+      key: '/repairs',
+      icon: <ToolOutlined />,
+      label: <Link to="/repairs">ສ້ອມແປງໄອທີ</Link>,
+    },
+    {
+      key: '/tasks',
+      icon: <CheckSquareOutlined />,
+      label: <Link to="/tasks">ວຽກງານ</Link>,
+    },
+    user?.role !== 'user' && {
+      key: '/repair-reports',
+      icon: <FileTextOutlined />,
+      label: <Link to="/repair-reports">ລາຍງານສ້ອມແປງ</Link>,
+    },
+    {
+      key: '/work-reports',
+      icon: <BarChartOutlined />,
+      label: <Link to="/work-reports">ລາຍງານວຽກງານ</Link>,
+    },
+    user?.role === 'admin' && {
+      key: '/users',
+      icon: <TeamOutlined />,
+      label: <Link to="/users">ຈັດການຜູ້ໃຊ້</Link>,
+    },
+  ].filter(Boolean) as MenuProps['items']
+
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: user?.fullName || user?.username,
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'ອອກຈາກລະບົບ',
+      danger: true,
+      onClick: handleLogout,
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <AntLayout style={{ minHeight: '100vh' }}>
       {/* Sidebar */}
-      <aside
-        className={`${
-          isSidebarOpen ? 'w-64' : 'w-20'
-        } bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+        breakpoint="lg"
+        style={{
+          overflow: 'auto',
+          height: '100vh',
+          position: 'fixed',
+          width: '2000px',
+          left: 0,
+          top: 0,
+          bottom: 0,
+        }}
       >
-        {/* Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          {isSidebarOpen && (
-            <h1 className="text-lg font-bold text-gray-900">
-              ລະບົບຄຸ້ມຄອງໄອທີ
-            </h1>
+        <div className="flex items-center justify-center h-16 lao-gradient shadow-lao">
+          {!collapsed ? (
+            <div className="text-center">
+              <h1 className="text-white text-lg font-bold mb-1">IT Management</h1>
+              <div className="w-8 h-0.5 bg-yellow-400 mx-auto"></div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <h1 className="text-white text-xl font-bold">IT</h1>
+              <div className="w-4 h-0.5 bg-yellow-400 mx-auto mt-1"></div>
+            </div>
           )}
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-          >
-            {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
         </div>
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          items={menuItems}
+        />
+      </Sider>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.path
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                title={!isSidebarOpen ? item.label : undefined}
-              >
-                <Icon className={`w-5 h-5 ${isSidebarOpen ? 'mr-3' : ''}`} />
-                {isSidebarOpen && <span>{item.label}</span>}
-              </Link>
-            )
-          })}
-        </nav>
+      {/* Main Layout */}
+      <AntLayout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
+        {/* Header */}
+        <Header
+          style={{
+            padding: '0 24px',
+            background: 'linear-gradient(90deg, #ffffff 0%, #f8fafc 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 6px -1px rgba(107, 70, 193, 0.1), 0 2px 4px -1px rgba(107, 70, 193, 0.06)',
+            borderBottom: '1px solid rgba(107, 70, 193, 0.1)',
+          }}
+        >
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => setCollapsed(!collapsed)}
+            style={{ fontSize: '16px', width: 64, height: 64 }}
+          />
 
-        {/* User Profile */}
-        {user && (
-          <div className="p-3 border-t border-gray-200">
-            <div className={`flex items-center ${isSidebarOpen ? 'mb-3' : 'justify-center mb-2'}`}>
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                <User className="w-5 h-5 text-blue-600" />
-              </div>
-              {isSidebarOpen && (
-                <div className="ml-3 flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user.fullName}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {user.role === 'admin' ? 'ຜູ້ດູແລລະບົບ' : user.role === 'technician' ? 'ຊ່າງເຕັກນິກ' : 'ຜູ້ໃຊ້'}
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            {/* Logout Button */}
-            <button
-              onClick={() => setShowLogoutDialog(true)}
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors w-full"
+          <Space size="middle">
+            <span className="text-gray-600">
+              {format(new Date(), 'dd/MM/yyyy HH:mm')}
+            </span>
+
+            <Button
+              type="text"
+              icon={<ReloadOutlined spin={isRefreshing} />}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
             >
-              <LogOut className="w-5 h-5" />
-              <span>ອອກຈາກລະບົບ</span>
-            </button>
-          </div>
-        )}
+              Sync
+            </Button>
 
-        {/* Sync Button */}
-        <div className="p-3 border-t border-gray-200">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing || isLoading}
-            className={`w-full flex items-center justify-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isRefreshing || isLoading
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-            title={!isSidebarOpen ? 'Sync ຂໍ້ມູນ' : undefined}
-          >
-            <RefreshCw
-              className={`w-5 h-5 ${isSidebarOpen ? 'mr-2' : ''} ${
-                isRefreshing || isLoading ? 'animate-spin' : ''
-              }`}
-            />
-            {isSidebarOpen && (
-              <span>
-                {isRefreshing || isLoading ? 'ກຳລັງໂຫຼດ...' : 'Sync ຂໍ້ມູນ'}
-              </span>
-            )}
-          </button>
-        </div>
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Space style={{ cursor: 'pointer' }} className="hover:bg-purple-50 px-3 py-2 rounded-lg transition-all">
+                <Avatar icon={<UserOutlined />} style={{ backgroundColor: 'var(--lao-purple)', boxShadow: '0 4px 6px -1px rgba(107, 70, 193, 0.3)' }} />
+                <span className="text-gray-800 font-medium">{user?.fullName || user?.username}</span>
+              </Space>
+            </Dropdown>
+          </Space>
+        </Header>
 
-        {/* Loading Indicator */}
-        {(isLoading || isRefreshing) && isSidebarOpen && (
-          <div className="px-3 pb-3">
-            <div className="flex items-center text-xs text-gray-500">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2"></div>
-              <span>ກຳລັງ sync ກັບ Google Sheets...</span>
-            </div>
-          </div>
-        )}
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <div className="flex items-center">
-            {(isLoading || isRefreshing) && (
-              <div className="flex items-center text-sm text-gray-600">
-                <RefreshCw className="w-4 h-4 animate-spin mr-2 text-blue-600" />
-                <span>ກຳລັງໂຫຼດຂໍ້ມູນ...</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            {user && (
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">{user.fullName}</span>
-                <span className="text-gray-400 mx-2">•</span>
-                <span className="text-gray-500">{user.department}</span>
-              </div>
-            )}
-            <div className="text-sm text-gray-500">
-              {format(new Date(), 'dd/MM/yyyy')}
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6">
-          <Outlet />
-        </main>
-      </div>
-
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>ອອກຈາກລະບົບ</AlertDialogTitle>
-            <AlertDialogDescription>
-              ທ່ານຕ້ອງການອອກຈາກລະບົບບໍ່?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>ຍົກເລີກ</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout}>ອອກຈາກລະບົບ</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {/* Content */}
+        <Content style={{ margin: '24px', minHeight: 'calc(100vh - 112px)' }}>
+          <Spin spinning={isLoading} size="large">
+            <Outlet />
+          </Spin>
+        </Content>
+      </AntLayout>
+    </AntLayout>
   )
 }

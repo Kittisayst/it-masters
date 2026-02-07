@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { ConfigProvider } from 'antd'
 import { AuthProvider } from './contexts/AuthContext'
 import { useLoadData } from './hooks/useLoadData'
+import { antdTheme } from './config/antd-theme'
 import ProtectedRoute from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -40,11 +43,15 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <ConfigProvider theme={antdTheme}>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </BrowserRouter>
+      </ConfigProvider>
+    </ErrorBoundary>
   )
 }
 

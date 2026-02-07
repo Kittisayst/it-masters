@@ -1,0 +1,129 @@
+/* Component-specific styles for better Tailwind usage */
+
+/* Button hover effects */
+.btn-hover-lift {
+  transform: translateY(0);
+  transition: all 0.2s;
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s;
+}
+
+.card-hover:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+/* Glass morphism effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(to right, #6B46C1, #8B5CF6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Lao theme colors */
+.lao-primary {
+  background: linear-gradient(to right, #6B46C1, #553C9A);
+}
+
+.lao-secondary {
+  background: linear-gradient(to right, #F59E0B, #D97706);
+}
+
+/* Loading skeleton */
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: #e5e7eb;
+  border-radius: 0.375rem;
+}
+
+/* Focus styles for accessibility */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus {
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.3);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Table styles */
+.table-zebra tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.table-zebra tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+/* Form validation styles */
+.form-error {
+  border-color: #ef4444;
+}
+
+.form-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-success {
+  border-color: #10b981;
+}
+
+.form-success:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Mobile responsive utilities */
+.mobile-full {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .mobile-full {
+    width: auto;
+  }
+}
+
+.mobile-stack {
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .mobile-stack {
+    flex-direction: row;
+  }
+}
+
+/* Spacing utilities */
+.spacing-tight > * + * {
+  margin-top: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.spacing-normal > * + * {
+  margin-top: 1rem;
+  margin-left: 1rem;
+}
+
+.spacing-loose > * + * {
+  margin-top: 1.5rem;
+  margin-left: 1.5rem;
+}
