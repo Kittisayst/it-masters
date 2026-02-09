@@ -12,7 +12,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "audit:performance": "node scripts/performance-audit.js",
-    "audit:all": "npm run build && npm run audit:performance"
+    "audit:all": "npm run build && npm run audit:performance",
+    "deploy": "npm run build && npx gh-pages -d dist"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

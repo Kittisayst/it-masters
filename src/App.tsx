@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import { AuthProvider } from './contexts/AuthContext'
 import { useLoadData } from './hooks/useLoadData'
@@ -45,11 +45,11 @@ function App() {
   return (
     <ErrorBoundary>
       <ConfigProvider theme={antdTheme}>
-        <BrowserRouter>
+        <HashRouter>
           <AuthProvider>
             <AppContent />
           </AuthProvider>
-        </BrowserRouter>
+        </HashRouter>
       </ConfigProvider>
     </ErrorBoundary>
   )

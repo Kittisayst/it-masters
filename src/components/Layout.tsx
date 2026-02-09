@@ -66,6 +66,7 @@ export default function Layout() {
     }
   }
 
+  
   const menuItems: MenuProps['items'] = [
     {
       key: '/',
@@ -126,11 +127,12 @@ export default function Layout() {
         collapsed={collapsed}
         onCollapse={setCollapsed}
         breakpoint="lg"
+        width={260}
+        collapsedWidth={80}
         style={{
           overflow: 'auto',
           height: '100vh',
           position: 'fixed',
-          width: '2000px',
           left: 0,
           top: 0,
           bottom: 0,
@@ -158,7 +160,7 @@ export default function Layout() {
       </Sider>
 
       {/* Main Layout */}
-      <AntLayout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
+      <AntLayout style={{ marginLeft: collapsed ? 80 : 280, transition: 'margin-left 0.2s' }}>
         {/* Header */}
         <Header
           style={{
