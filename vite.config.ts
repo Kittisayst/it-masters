@@ -16,7 +16,8 @@ export default defineConfig({
         theme_color: '#1677ff',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/',
+        scope: '/it-masters/',
+        start_url: '/it-masters/',
         lang: 'lo',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
