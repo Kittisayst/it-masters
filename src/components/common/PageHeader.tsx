@@ -1,4 +1,4 @@
-import { Typography } from 'antd';
+import { Typography, theme } from 'antd';
 import type React from 'react';
 
 const { Title } = Typography;
@@ -10,8 +10,24 @@ interface Props {
 }
 
 export default function PageHeader({ title, primaryAction, secondaryActions }: Props) {
+  const { token } = theme.useToken();
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+    <div
+      style={{
+        position: 'sticky',
+        top: 64,
+        zIndex: 10,
+        background: token.colorBgLayout,
+        paddingTop: 8,
+        paddingBottom: 12,
+        marginBottom: 8,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+      }}
+    >
       <Title level={4} style={{ margin: 0 }}>
         {title}
       </Title>

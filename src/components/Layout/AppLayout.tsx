@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Typography, theme, Grid, Drawer } from 'antd';
 import { useNavigate, useLocation, Outlet } from 'react-router';
 import {
@@ -42,6 +42,26 @@ const navItems = [
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => {
+      const x = e.touches[0].clientX;
+      touchStartX.current = x < 32 ? x : null;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      if (dx > 60) setDrawerOpen(true);
+      touchStartX.current = null;
+    };
+    document.addEventListener('touchstart', onTouchStart);
+    document.addEventListener('touchend', onTouchEnd);
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
@@ -120,6 +140,9 @@ export default function AppLayout() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: isMobile ? '0 12px' : '0 24px',
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
           }}
         >
           {isMobile ? (
