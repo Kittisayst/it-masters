@@ -3,11 +3,11 @@
 // ====================================================
 
 function generateBorrowCode() {
-  var all = getBorrowingHeaderTable().findAll();
-  if (!all.success || all.data.length === 0) return 'B-001';
-  var codes = all.data.map(function(h) { return parseInt((h.borrowCode || 'B-000').replace('B-', ''), 10); });
-  var max = Math.max.apply(null, codes);
-  return 'B-' + String(max + 1).padStart(3, '0');
+  var headers = getBorrowingHeaderTable().orderBy('borrowCode', 'DESC').limit(1).get();
+  if (!headers.success || headers.data.length === 0) return 'B-001';
+  var last = headers.data[0].borrowCode;
+  var num = parseInt(last.replace('B-', ''), 10) + 1;
+  return 'B-' + String(num).padStart(3, '0');
 }
 
 function handleBorrowing(method, params) {
@@ -17,37 +17,25 @@ function handleBorrowing(method, params) {
 
   // ------ READ ------
   if (method === 'findAll') {
-    var all = headers.findAll();
-    if (all.success) all.data.sort(function(a, b) { return b.borrowDate > a.borrowDate ? 1 : -1; });
-    return all;
+    return headers.orderBy('borrowDate', 'DESC').get();
   }
 
   if (method === 'find') {
-    var all = headers.findAll();
-    if (!all.success) return all;
-    var filtered = all.data.filter(function(h) {
-      if (params.status     && h.status     !== params.status)     return false;
-      if (params.borrowerId && h.borrowerId !== params.borrowerId) return false;
-      return true;
-    });
-    filtered.sort(function(a, b) { return b.borrowDate > a.borrowDate ? 1 : -1; });
-    return { success: true, data: filtered };
+    var q = headers;
+    if (params.status)     q = q.where('status', '=', params.status);
+    if (params.borrowerId) q = q.where('borrowerId', '=', params.borrowerId);
+    return q.orderBy('borrowDate', 'DESC').get();
   }
 
   if (method === 'findById') {
     var header = headers.findById(params.id);
     if (!header.success) return header;
-    var allItems = items.findAll();
-    var borrowItems = allItems.success
-      ? allItems.data.filter(function(i) { return i.borrowingId === params.id; })
-      : [];
-    return { success: true, data: { header: header.data, items: borrowItems } };
+    var borrowItems = items.where('borrowingId', '=', params.id).get();
+    return { success: true, data: { header: header.data, items: borrowItems.data || [] } };
   }
 
   if (method === 'getItems') {
-    var allItems = items.findAll();
-    if (!allItems.success) return allItems;
-    return { success: true, data: allItems.data.filter(function(i) { return i.borrowingId === params.borrowingId; }) };
+    return items.where('borrowingId', '=', params.borrowingId).get();
   }
 
   // ------ CREATE ------
@@ -86,11 +74,11 @@ function handleBorrowing(method, params) {
     });
     if (!updateResult.success) return updateResult;
 
-    var allItems = items.findAll();
-    if (allItems.success) {
-      allItems.data
-        .filter(function(i) { return i.borrowingId === params.id; })
-        .forEach(function(item) { equip.update(item.equipmentId, { status: 'ປົກກະຕິ' }); });
+    var borrowItems = items.where('borrowingId', '=', params.id).get();
+    if (borrowItems.success) {
+      borrowItems.data.forEach(function(item) {
+        equip.update(item.equipmentId, { status: 'ປົກກະຕິ' });
+      });
     }
     return updateResult;
   }
@@ -98,26 +86,26 @@ function handleBorrowing(method, params) {
   // ------ OVERDUE ------
   if (method === 'checkOverdue') {
     var today = new Date().toISOString().split('T')[0];
-    var all = headers.findAll();
-    var updated = 0;
-    if (all.success) {
-      all.data
-        .filter(function(h) { return h.status === 'ກຳລັງຢືມ' && h.dueDate < today; })
-        .forEach(function(h) { headers.update(h.id, { status: 'ເກີນກຳນົດ' }); updated++; });
+    var overdueList = headers
+      .where('status', '=', 'ກຳລັງຢືມ')
+      .where('dueDate', '<', today)
+      .get();
+    if (overdueList.success) {
+      overdueList.data.forEach(function(h) {
+        headers.update(h.id, { status: 'ເກີນກຳນົດ' });
+      });
     }
-    return { success: true, data: { updated: updated } };
+    return { success: true, data: { updated: overdueList.success ? overdueList.data.length : 0 } };
   }
 
   // ------ DELETE ------
   if (method === 'delete') {
-    var allItems = items.findAll();
-    if (allItems.success) {
-      allItems.data
-        .filter(function(i) { return i.borrowingId === params.id; })
-        .forEach(function(item) {
-          items.delete(item.id);
-          equip.update(item.equipmentId, { status: 'ປົກກະຕິ' });
-        });
+    var borrowItems = items.where('borrowingId', '=', params.id).get();
+    if (borrowItems.success) {
+      borrowItems.data.forEach(function(item) {
+        items.delete(item.id);
+        equip.update(item.equipmentId, { status: 'ປົກກະຕິ' });
+      });
     }
     return headers.delete(params.id);
   }

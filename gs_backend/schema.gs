@@ -26,6 +26,16 @@ function getDepartmentsTable() {
   });
 }
 
+function getCategoriesTable() {
+  return getDb().table('Categories').schema({
+    id:          { type: 'string' },
+    name:        { type: 'string', required: true },
+    description: { type: 'string' },
+    createdAt:   { type: 'string' },
+    updatedAt:   { type: 'string' }
+  });
+}
+
 function getEmployeesTable() {
   return getDb().table('Employees').schema({
     id:           { type: 'string' },
@@ -56,7 +66,8 @@ function getEquipmentTable() {
     id:           { type: 'string' },
     code:         { type: 'string', required: true },
     name:         { type: 'string', required: true },
-    type:         { type: 'string', required: true, enum: ['ຄອມ', 'Printer', 'Projector', 'Network', 'ອື່ນໆ'] },
+    type:         { type: 'string', required: true },
+    categoryId:   { type: 'string' },
     serialNumber: { type: 'string' },
     location:     { type: 'string' },
     status:       { type: 'string', required: true, enum: ['ປົກກະຕິ', 'ສ້ອມແປງ', 'ປົດລຶບ', 'ຖືກຢືມ', 'ຖືກເບີກ'], default: 'ປົກກະຕິ' },
@@ -145,7 +156,7 @@ function runMigrations() {
     },
     {
       version: '005', name: 'create_equipment',
-      up: function(db) { db.createTable('Equipment', ['id','code','name','type','serialNumber','location','status','receivedDate','fundSource','price','recordedBy','createdAt','updatedAt']); },
+      up: function(db) { db.createTable('Equipment', ['id','code','name','type','categoryId','serialNumber','location','status','receivedDate','fundSource','price','recordedBy','createdAt','updatedAt']); },
       down: function(db) { db.dropTable('Equipment'); }
     },
     {
@@ -169,6 +180,11 @@ function runMigrations() {
         db.dropTable('DisbursementHeader');
         db.dropTable('DisbursementItems');
       }
+    },
+    {
+      version: '008', name: 'create_categories',
+      up: function(db) { db.createTable('Categories', ['id','name','description','createdAt','updatedAt']); },
+      down: function(db) { db.dropTable('Categories'); }
     }
   ];
   var result = SheetORM.migrate(SPREADSHEET_ID, migrations);
@@ -176,14 +192,113 @@ function runMigrations() {
 }
 
 // ====================================================
-// Seed — initial admin user
+// Seed — admin user + departments + categories
 // ====================================================
 function runSeed() {
   var seeds = {
     Users: [
       { username: 'admin', password: md5('admin123'), fullName: 'ຜູ້ດູແລລະບົບ', position: 'IT Admin' }
+    ],
+    Departments: [
+      { name: 'ບໍລິຫານ-ທຸລະກິດ',                              code: 'BUS' },
+      { name: 'ເຕັກໂນໂລຊີໄຟຟ້າ',                              code: 'ELE' },
+      { name: 'ອຸດສາຫະກໍາ',                                    code: 'IND' },
+      { name: 'ບໍລິຫານໂຮງແຮມ ແລະ ການທ່ອງທ່ຽວ',               code: 'HTM' },
+      { name: 'ກໍ່ສ້າງເຄຫາສະຖານ',                             code: 'CON' },
+      { name: 'ພະແນກ ວິຊາການ',                                 code: 'ACA' },
+      { name: 'ພະແນກ ບໍລິຫານ ແລະ ຈັດຕັ້ງພະນັກງານ',           code: 'ADM' },
+      { name: 'ພະແນກ ກິດຈະການນັກສຶກສາ',                       code: 'STU' },
+      { name: 'ສູນເຝິກອົບຮົມການບໍລິການໂຮງແຮມ ແລະ ການທ່ອງທ່ຽວ', code: 'HTC' },
+      { name: 'ຄະນະອຳນວຍການ',                                   code: 'MGT' }
     ]
   };
   var result = SheetORM.seed(SPREADSHEET_ID, seeds);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Seed categories — run separately if needed
+// ====================================================
+function runSeedCategories() {
+  var seeds = {
+    Categories: [
+      { name: 'ຄອມພິວເຕີ',     description: 'Desktop, Laptop, All-in-one' },
+      { name: 'Printer',       description: 'Laser, Inkjet, Plotter' },
+      { name: 'Projector',     description: 'Projector ແລະ ອຸປະກອນສາຍສັນຍາ' },
+      { name: 'Network',       description: 'Router, Switch, Access Point, Cable' },
+      { name: 'ອຸປະກອນໄຟຟ້າ', description: 'UPS, Stabilizer, Extension' },
+      { name: 'ອື່ນໆ',         description: 'ອຸປະກອນ IT ອື່ນໆ' }
+    ]
+  };
+  var result = SheetORM.seed(SPREADSHEET_ID, seeds);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Seed employees — requires Departments to exist first
+// ====================================================
+function runSeedEmployees() {
+  var depts = getDepartmentsTable().findAll();
+  if (!depts.success) { Logger.log('Departments not found: ' + depts.error); return; }
+
+  var deptMap = {};
+  depts.data.forEach(function(d) { deptMap[d.code] = d.id; });
+
+  var result = getEmployeesTable().insertMany([
+    { fullName: 'ທ. ສົມຊາຍ ວົງສີ',     position: 'ຫົວໜ້າ IT',      departmentId: deptMap['ADM'], phone: '020-5555-0001' },
+    { fullName: 'ນ. ນ້ຳຝົນ ພົມມະວົງ',   position: 'ນັກວິຊາການ IT', departmentId: deptMap['ACA'], phone: '020-5555-0002' },
+    { fullName: 'ທ. ວິໄລ ດາລາວົງ',     position: 'ຄູສອນ',          departmentId: deptMap['ELE'], phone: '020-5555-0003' },
+    { fullName: 'ນ. ສຸດາ ພັດທະໜາ',     position: 'ຄູສອນ',          departmentId: deptMap['BUS'], phone: '020-5555-0004' },
+    { fullName: 'ທ. ຄຳໄຂ ບຸນຍະວົງ',   position: 'ນັກວິຊາການ',    departmentId: deptMap['IND'], phone: '020-5555-0005' },
+    { fullName: 'ນ. ມາລີ ສີດາວົງ',     position: 'ເລຂານຸການ',     departmentId: deptMap['STU'], phone: '020-5555-0006' },
+    { fullName: 'ທ. ບຸນທວີ ແສງດາລາ', position: 'ຄູສອນ',          departmentId: deptMap['HTM'], phone: '020-5555-0007' },
+    { fullName: 'ນ. ຈັນທະລາ ວົງໄຊ',   position: 'ຄູສອນ',          departmentId: deptMap['CON'], phone: '020-5555-0008' }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Seed equipment — requires Categories + Users first
+// ====================================================
+function runSeedEquipment() {
+  var cats = getCategoriesTable().findAll();
+  if (!cats.success) { Logger.log('Categories not found: ' + cats.error); return; }
+
+  var users = getUsersTable().findAll();
+  if (!users.success || !users.data.length) { Logger.log('Users not found'); return; }
+
+  var catMap = {};
+  cats.data.forEach(function(c) { catMap[c.name] = c.id; });
+  var adminId = users.data[0].id;
+
+  var result = getEquipmentTable().insertMany([
+    { code: 'IT-001', name: 'Dell Laptop Inspiron 15',    type: 'ຄອມ',            categoryId: catMap['ຄອມພິວເຕີ'],    serialNumber: 'DL-2024-001', location: 'ຫ້ອງ IT',      status: 'ປົກກະຕິ', receivedDate: '2024-01-15', fundSource: 'ງົບປະມານ 2024',  price: 8000000,  recordedBy: adminId },
+    { code: 'IT-002', name: 'HP LaserJet Pro M404n',      type: 'Printer',        categoryId: catMap['Printer'],       serialNumber: 'HP-2024-001', location: 'ຫ້ອງ ADM',     status: 'ປົກກະຕິ', receivedDate: '2024-02-01', fundSource: 'ງົບປະມານ 2024',  price: 3500000,  recordedBy: adminId },
+    { code: 'IT-003', name: 'Epson EB-X51 Projector',     type: 'Projector',      categoryId: catMap['Projector'],     serialNumber: 'EP-2023-001', location: 'ຫ້ອງປະຊຸມ',   status: 'ປົກກະຕິ', receivedDate: '2023-11-10', fundSource: 'ໂຄງການ JICA',   price: 12000000, recordedBy: adminId },
+    { code: 'IT-004', name: 'Cisco Switch 24-port',       type: 'Network',        categoryId: catMap['Network'],       serialNumber: 'CS-2023-001', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-09-05', fundSource: 'ໂຄງການ JICA',   price: 9000000,  recordedBy: adminId },
+    { code: 'IT-005', name: 'Dell Desktop OptiPlex 3090', type: 'ຄອມ',            categoryId: catMap['ຄອມພິວເຕີ'],    serialNumber: 'DK-2022-001', location: 'ຫ້ອງ Lab 1',  status: 'ປົກກະຕິ', receivedDate: '2022-06-20', fundSource: 'ງົບປະມານ 2022',  price: 7000000,  recordedBy: adminId },
+    { code: 'IT-006', name: 'APC UPS 1000VA',             type: 'ອຸປະກອນໄຟຟ້າ', categoryId: catMap['ອຸປະກອນໄຟຟ້າ'], serialNumber: 'APC-2023-01', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-03-15', fundSource: 'ງົບປະມານ 2023',  price: 2500000,  recordedBy: adminId }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Seed work records — requires Employees to exist first
+// ====================================================
+function runSeedWorkRecords() {
+  var employees = getEmployeesTable().findAll();
+  if (!employees.success || !employees.data.length) { Logger.log('Employees not found'); return; }
+
+  var emp = employees.data;
+  var e0 = emp[0];
+  var e1 = emp[1] || emp[0];
+
+  var result = getWorkRecordsTable().insertMany([
+    { date: '2024-06-01', staffId: e0.id, departmentId: e0.departmentId, location: 'ຫ້ອງ IT',      workType: 'ສ້ອມແປງ',     description: 'ສ້ອມແປງ Dell Laptop IT-001 ໄດ',        status: 'ສຳເລັດ' },
+    { date: '2024-06-03', staffId: e0.id, departmentId: e0.departmentId, location: 'ຫ້ອງ Lab 1',  workType: 'ຕິດຕັ້ງ',     description: 'ຕິດຕັ້ງ Windows 11 ແລະ ໂປຣແກຣມ Office', status: 'ສຳເລັດ' },
+    { date: '2024-06-05', staffId: e1.id, departmentId: e1.departmentId, location: 'ຫ້ອງ ADM',    workType: 'ສະໜັບສະໜູນ', description: 'ຊ່ວຍເຫຼືອການໃຊ້ MS Office 365',         status: 'ສຳເລັດ' },
+    { date: '2024-06-10', staffId: e0.id, departmentId: e0.departmentId, location: 'ຫ້ອງ Server', workType: 'ຕິດຕັ້ງ',     description: 'ຕິດຕັ້ງ Cisco Switch ໃໝ່ 24-port',       status: 'ສຳເລັດ' },
+    { date: '2024-06-12', staffId: e1.id, departmentId: e1.departmentId, location: 'ຫ້ອງ Lab 1', workType: 'ສ້ອມແປງ',     description: 'ກວດສອບ ແລະ ທຳຄວາມສະອາດ Printer HP',    status: 'ຍັງຄ້າງ' }
+  ]);
   Logger.log(JSON.stringify(result));
 }

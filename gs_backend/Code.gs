@@ -30,6 +30,7 @@ function doPost(e) {
     var handlers = {
       auth:         handleAuth,
       users:        handleUsers,
+      categories:   handleCategories,
       departments:  handleDepartments,
       employees:    handleEmployees,
       workRecords:  handleWorkRecords,

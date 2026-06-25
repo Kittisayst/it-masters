@@ -6,31 +6,20 @@ function handleEquipment(method, params) {
   var table = getEquipmentTable();
 
   if (method === 'findAll') {
-    var all = table.findAll();
-    if (all.success) all.data.sort(function(a, b) { return a.code > b.code ? 1 : -1; });
-    return all;
+    return table.orderBy('code', 'ASC').get();
   }
 
   if (method === 'find') {
-    var all = table.findAll();
-    if (!all.success) return all;
-    var filtered = all.data.filter(function(e) {
-      if (params.type   && e.type   !== params.type)               return false;
-      if (params.status && e.status !== params.status)             return false;
-      if (params.name   && e.name.indexOf(params.name) === -1)     return false;
-      return true;
-    });
-    filtered.sort(function(a, b) { return a.code > b.code ? 1 : -1; });
-    return { success: true, data: filtered };
+    var q = table;
+    if (params.type)   q = q.where('type', '=', params.type);
+    if (params.status) q = q.where('status', '=', params.status);
+    if (params.name)   q = q.where('name', 'contains', params.name);
+    return q.orderBy('code', 'ASC').get();
   }
 
   if (method === 'findById')  return table.findById(params.id);
   if (method === 'insert')    return table.insert(params);
-
-  if (method === 'update') {
-    return table.update(params.id, params.data);
-  }
-
+  if (method === 'update')    return table.update(params.id, params.data);
   if (method === 'delete')    return table.delete(params.id);
 
   if (method === 'updateStatus') {

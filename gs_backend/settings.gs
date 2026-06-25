@@ -25,6 +25,18 @@ function handleUsers(method, params) {
   return { success: false, error: 'Unknown users method: ' + method };
 }
 
+function handleCategories(method, params) {
+  var table = getCategoriesTable();
+
+  if (method === 'findAll') return table.findAll();
+  if (method === 'findById') return table.findById(params.id);
+  if (method === 'insert')   return table.insert(params);
+  if (method === 'update')   return table.update(params.id, params.data);
+  if (method === 'delete')   return table.delete(params.id);
+
+  return { success: false, error: 'Unknown categories method: ' + method };
+}
+
 function handleDepartments(method, params) {
   var table = getDepartmentsTable();
 
