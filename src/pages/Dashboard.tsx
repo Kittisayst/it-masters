@@ -1,4 +1,4 @@
-import { Card, Col, Row, Statistic, Table, Tag, Typography } from 'antd';
+import { Card, Col, Row, Statistic, Tag, Typography } from 'antd';
 import {
   FileTextOutlined,
   LaptopOutlined,
@@ -7,13 +7,16 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
+import SkeletonStatCard from '../components/common/SkeletonStatCard';
+import SkeletonTable from '../components/common/SkeletonTable';
+import ResponsiveTable from '../components/common/ResponsiveTable';
 import type { DashboardStats, WorkRecord } from '../types';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
 
 export default function Dashboard() {
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard', 'stats'],
     queryFn: async () => {
       const res = await dashboardApi.stats();
@@ -21,7 +24,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: recentWork } = useQuery({
+  const { data: recentWork, isLoading: workLoading } = useQuery({
     queryKey: ['dashboard', 'recent'],
     queryFn: async () => {
       const res = await dashboardApi.recentWorkRecords(8);
@@ -46,54 +49,75 @@ export default function Dashboard() {
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title="ວຽກມື້ນີ້"
-              value={stats?.workToday ?? 0}
-              prefix={<FileTextOutlined />}
-              styles={{ content: { color: '#5c6bc0' } }}
-            />
+            {statsLoading ? <SkeletonStatCard /> : (
+              <div key="stat-work" className="content-enter">
+                <Statistic
+                  title="ວຽກມື້ນີ້"
+                  value={stats?.workToday ?? 0}
+                  prefix={<FileTextOutlined />}
+                  styles={{ content: { color: '#5c6bc0' } }}
+                />
+              </div>
+            )}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title="ອຸປະກອນທັງໝົດ"
-              value={stats?.equipment.total ?? 0}
-              prefix={<LaptopOutlined />}
-              suffix={<small style={{ fontSize: 13, color: '#8c8c8c' }}>/ ພ້ອມ {stats?.equipment.available ?? 0}</small>}
-            />
+            {statsLoading ? <SkeletonStatCard /> : (
+              <div key="stat-equip" className="content-enter" style={{ animationDelay: '60ms' }}>
+                <Statistic
+                  title="ອຸປະກອນທັງໝົດ"
+                  value={stats?.equipment.total ?? 0}
+                  prefix={<LaptopOutlined />}
+                  suffix={<small style={{ fontSize: 13, color: '#8c8c8c' }}>/ ພ້ອມ {stats?.equipment.available ?? 0}</small>}
+                />
+              </div>
+            )}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title="ກຳລັງຢືມ"
-              value={stats?.borrowing.active ?? 0}
-              prefix={<InboxOutlined />}
-              styles={{ content: { color: '#1890ff' } }}
-            />
+            {statsLoading ? <SkeletonStatCard /> : (
+              <div key="stat-borrow" className="content-enter" style={{ animationDelay: '120ms' }}>
+                <Statistic
+                  title="ກຳລັງຢືມ"
+                  value={stats?.borrowing.active ?? 0}
+                  prefix={<InboxOutlined />}
+                  styles={{ content: { color: '#1890ff' } }}
+                />
+              </div>
+            )}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title="ເກີນກຳນົດຄືນ"
-              value={stats?.borrowing.overdue ?? 0}
-              prefix={<WarningOutlined />}
-              styles={{ content: { color: stats?.borrowing.overdue ? '#ff4d4f' : undefined } }}
-            />
+            {statsLoading ? <SkeletonStatCard /> : (
+              <div key="stat-overdue" className="content-enter" style={{ animationDelay: '180ms' }}>
+                <Statistic
+                  title="ເກີນກຳນົດຄືນ"
+                  value={stats?.borrowing.overdue ?? 0}
+                  prefix={<WarningOutlined />}
+                  styles={{ content: { color: stats?.borrowing.overdue ? '#ff4d4f' : undefined } }}
+                />
+              </div>
+            )}
           </Card>
         </Col>
       </Row>
 
       <Card title="ໜ້າວຽກລ່າສຸດ" style={{ marginTop: 16 }}>
-        <Table
-          columns={workColumns}
-          dataSource={recentWork}
-          rowKey="id"
-          size="small"
-          pagination={false}
-        />
+        {workLoading ? <SkeletonTable rows={5} cols={4} /> : (
+          <div className="content-enter">
+            <ResponsiveTable
+              columns={workColumns}
+              dataSource={recentWork}
+              rowKey="id"
+              size="small"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { employeesApi } from '../../services/api';
 import { useDepartments } from '../../hooks/useReferenceData';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import type { Employee } from '../../types';
-
-const { Title } = Typography;
 
 export default function EmployeesSettings() {
   const qc = useQueryClient();
@@ -65,12 +66,12 @@ export default function EmployeesSettings() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ພະນັກງານ (ຜູ້ຢືມ/ຮັບ)</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມ</Button>
-      </div>
+      <PageHeader
+        title="ພະນັກງານ (ຜູ້ຢືມ/ຮັບ)"
+        primaryAction={<Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມ</Button>}
+      />
       <Card>
-        <Table columns={columns} dataSource={data} rowKey="id" loading={isLoading} />
+        {isLoading ? <SkeletonTable rows={4} cols={4} /> : <ResponsiveTable columns={columns} dataSource={data} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['fullName', 'position', 'departmentId']} />}
       </Card>
       <Modal
         title={editing ? 'ແກ້ໄຂ' : 'ເພີ່ມພະນັກງານ'}

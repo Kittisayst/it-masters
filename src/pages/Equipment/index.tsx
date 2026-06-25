@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Button, Card, Select, Space, Table, Typography, Popconfirm } from 'antd';
+import { Button, Card, Select, Space, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
@@ -8,10 +9,10 @@ import { equipmentApi } from '../../services/api';
 import { useUsers, useCategories } from '../../hooks/useReferenceData';
 import StatusBadge from '../../components/common/StatusBadge';
 import EquipmentForm from './EquipmentForm';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
 import type { Equipment } from '../../types';
-
-const { Title } = Typography;
 
 const TYPES = ['ຄອມ', 'Printer', 'Projector', 'Network', 'ອື່ນໆ'];
 const STATUSES = ['ປົກກະຕິ', 'ສ້ອມແປງ', 'ປົດລຶບ', 'ຖືກຢືມ', 'ຖືກເບີກ'];
@@ -87,18 +88,18 @@ export default function EquipmentPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ອຸປະກອນ IT</Title>
-        <Space>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>
+      <PageHeader
+        title="ອຸປະກອນ IT"
+        secondaryActions={<Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>}
+        primaryAction={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); setFormOpen(true); }}>
             ເພີ່ມອຸປະກອນ
           </Button>
-        </Space>
-      </div>
+        }
+      />
 
       <Card style={{ marginBottom: 16 }}>
-        <Space wrap>
+        <div className="filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <Select
             placeholder="ປະເພດ"
             allowClear
@@ -120,11 +121,11 @@ export default function EquipmentPage() {
             options={categories.map((c) => ({ value: c.id, label: c.name }))}
             onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.categoryId = v; else delete n.categoryId; return n; })}
           />
-        </Space>
+        </div>
       </Card>
 
       <Card>
-        <Table columns={columns} dataSource={items} rowKey="id" loading={isLoading} scroll={{ x: 900 }} />
+        {isLoading ? <SkeletonTable rows={6} cols={8} /> : <ResponsiveTable columns={columns} dataSource={items} rowKey="id" scroll={{ x: 900 }} mobilePrimaryFields={['code', 'name', 'status']} />}
       </Card>
 
       <EquipmentForm

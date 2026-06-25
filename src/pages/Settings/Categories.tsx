@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Button, Card, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { Button, Card, Form, Input, Modal, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { categoriesApi } from '../../services/api';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import type { Category } from '../../types';
-
-const { Title } = Typography;
 
 export default function CategoriesSettings() {
   const qc = useQueryClient();
@@ -76,21 +77,15 @@ export default function CategoriesSettings() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ປະເພດອຸປະກອນ (Categories)</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>
-          ເພີ່ມປະເພດ
-        </Button>
-      </div>
+      <PageHeader
+        title="ປະເພດອຸປະກອນ (Categories)"
+        primaryAction={<Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມປະເພດ</Button>}
+      />
 
       <Card>
-        <Table
-          columns={columns}
-          dataSource={categories}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{ pageSize: 20 }}
-        />
+        {isLoading ? <SkeletonTable rows={4} cols={3} /> : (
+          <ResponsiveTable columns={columns} dataSource={categories} rowKey="id" pagination={{ pageSize: 20 }} scroll={{ x: 'max-content' }} />
+        )}
       </Card>
 
       <Modal

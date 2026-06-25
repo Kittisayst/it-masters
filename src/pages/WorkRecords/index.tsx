@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Button, Card, DatePicker, Select, Space, Table, Typography, Popconfirm } from 'antd';
+import { Button, Card, DatePicker, Select, Space, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
@@ -8,10 +9,11 @@ import { workRecordsApi } from '../../services/api';
 import { useDepartments, useUsers } from '../../hooks/useReferenceData';
 import StatusBadge from '../../components/common/StatusBadge';
 import WorkRecordForm from './WorkRecordForm';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
 import type { WorkRecord } from '../../types';
 
-const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
 export default function WorkRecordsPage() {
@@ -78,18 +80,18 @@ export default function WorkRecordsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ໜ້າວຽກປະຈຳວັນ</Title>
-        <Space>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>
+      <PageHeader
+        title="ໜ້າວຽກປະຈຳວັນ"
+        secondaryActions={<Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>}
+        primaryAction={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); setFormOpen(true); }}>
             ເພີ່ມໜ້າວຽກ
           </Button>
-        </Space>
-      </div>
+        }
+      />
 
       <Card style={{ marginBottom: 16 }}>
-        <Space wrap>
+        <div className="filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <RangePicker
             onChange={(dates) => {
               if (dates?.[0] && dates?.[1]) {
@@ -104,27 +106,27 @@ export default function WorkRecordsPage() {
             allowClear
             style={{ width: 200 }}
             options={departments.map((d) => ({ value: d.id, label: d.name }))}
-            onChange={(v) => setFilters((f) => v ? { ...f, departmentId: v } : (({ departmentId: _, ...rest }) => rest)(f))}
+            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.departmentId = v; else delete n.departmentId; return n; })}
           />
           <Select
             placeholder="ຜູ້ປະຕິບັດ"
             allowClear
             style={{ width: 180 }}
             options={users.map((u) => ({ value: u.id, label: u.fullName }))}
-            onChange={(v) => setFilters((f) => v ? { ...f, staffId: v } : (({ staffId: _, ...rest }) => rest)(f))}
+            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.staffId = v; else delete n.staffId; return n; })}
           />
           <Select
             placeholder="ສະຖານະ"
             allowClear
             style={{ width: 140 }}
             options={[{ value: 'ສຳເລັດ', label: 'ສຳເລັດ' }, { value: 'ຍັງຄ້າງ', label: 'ຍັງຄ້າງ' }]}
-            onChange={(v) => setFilters((f) => v ? { ...f, status: v } : (({ status: _, ...rest }) => rest)(f))}
+            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.status = v; else delete n.status; return n; })}
           />
-        </Space>
+        </div>
       </Card>
 
       <Card>
-        <Table columns={columns} dataSource={records} rowKey="id" loading={isLoading} />
+        {isLoading ? <SkeletonTable rows={6} cols={6} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['date', 'workType', 'status']} />}
       </Card>
 
       <WorkRecordForm

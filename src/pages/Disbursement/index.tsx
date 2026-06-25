@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Button, Card, Modal, Space, Table, Typography, Popconfirm } from 'antd';
+import { Button, Card, Modal, Space, Popconfirm } from 'antd';
 import { PlusOutlined, PrinterOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
@@ -8,10 +9,10 @@ import { disbursementApi, equipmentApi } from '../../services/api';
 import { useEmployees, useUsers } from '../../hooks/useReferenceData';
 import DisbursementForm from './DisbursementForm';
 import DisbursementSlip from './DisbursementSlip';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
 import type { DisbursementDetail, DisbursementHeader, Equipment } from '../../types';
-
-const { Title } = Typography;
 
 export default function DisbursementPage() {
   const qc = useQueryClient();
@@ -73,16 +74,14 @@ export default function DisbursementPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ເບີກຈ່າຍອຸປະກອນ</Title>
-        <Space>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>ບັນທຶກການເບີກ</Button>
-        </Space>
-      </div>
+      <PageHeader
+        title="ເບີກຈ່າຍອຸປະກອນ"
+        secondaryActions={<Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>}
+        primaryAction={<Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>ບັນທຶກການເບີກ</Button>}
+      />
 
       <Card>
-        <Table columns={columns} dataSource={records} rowKey="id" loading={isLoading} />
+        {isLoading ? <SkeletonTable rows={6} cols={4} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} />}
       </Card>
 
       <DisbursementForm open={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); qc.invalidateQueries({ queryKey: ['disbursement'] }); qc.invalidateQueries({ queryKey: ['equipment'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />

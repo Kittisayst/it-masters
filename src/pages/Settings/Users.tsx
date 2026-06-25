@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Button, Card, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { Button, Card, Form, Input, Modal, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usersApi } from '../../services/api';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import type { User } from '../../types';
-
-const { Title } = Typography;
 
 export default function UsersSettings() {
   const qc = useQueryClient();
@@ -60,12 +61,12 @@ export default function UsersSettings() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ຜູ້ໃຊ້ລະບົບ (IT Staff)</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມຜູ້ໃຊ້</Button>
-      </div>
+      <PageHeader
+        title="ຜູ້ໃຊ້ລະບົບ (IT Staff)"
+        primaryAction={<Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມຜູ້ໃຊ້</Button>}
+      />
       <Card>
-        <Table columns={columns} dataSource={users} rowKey="id" loading={isLoading} />
+        {isLoading ? <SkeletonTable rows={4} cols={4} /> : <ResponsiveTable columns={columns} dataSource={users} rowKey="id" scroll={{ x: 'max-content' }} />}
       </Card>
       <Modal
         title={editing ? 'ແກ້ໄຂຜູ້ໃຊ້' : 'ເພີ່ມຜູ້ໃຊ້'}

@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Button, Card, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { Button, Card, Form, Input, Modal, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { departmentsApi } from '../../services/api';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import type { Department } from '../../types';
-
-const { Title } = Typography;
 
 export default function DepartmentsSettings() {
   const qc = useQueryClient();
@@ -58,12 +59,12 @@ export default function DepartmentsSettings() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ຫ້ອງການ / ພະແນກ</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມ</Button>
-      </div>
+      <PageHeader
+        title="ຫ້ອງການ / ພະແນກ"
+        primaryAction={<Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມ</Button>}
+      />
       <Card>
-        <Table columns={columns} dataSource={data} rowKey="id" loading={isLoading} />
+        {isLoading ? <SkeletonTable rows={4} cols={3} /> : <ResponsiveTable columns={columns} dataSource={data} rowKey="id" scroll={{ x: 'max-content' }} />}
       </Card>
       <Modal
         title={editing ? 'ແກ້ໄຂ' : 'ເພີ່ມຫ້ອງການ/ພະແນກ'}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Button, Card, Modal, Select, Space, Table, Typography, Popconfirm } from 'antd';
+import { Button, Card, Modal, Select, Space, Popconfirm } from 'antd';
 import { PlusOutlined, PrinterOutlined, CheckOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
@@ -9,10 +10,10 @@ import { useEmployees, useUsers } from '../../hooks/useReferenceData';
 import StatusBadge from '../../components/common/StatusBadge';
 import BorrowingForm from './BorrowingForm';
 import BorrowingSlip from './BorrowingSlip';
+import SkeletonTable from '../../components/common/SkeletonTable';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
 import type { BorrowingDetail, BorrowingHeader, Equipment } from '../../types';
-
-const { Title } = Typography;
 
 export default function BorrowingPage() {
   const qc = useQueryClient();
@@ -95,13 +96,11 @@ export default function BorrowingPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>ຢືມອຸປະກອນ</Title>
-        <Space>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>ບັນທຶກການຢືມ</Button>
-        </Space>
-      </div>
+      <PageHeader
+        title="ຢືມອຸປະກອນ"
+        secondaryActions={<Button icon={<DownloadOutlined />} onClick={handleExport}>Export Excel</Button>}
+        primaryAction={<Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>ບັນທຶກການຢືມ</Button>}
+      />
 
       <Card style={{ marginBottom: 16 }}>
         <Select
@@ -114,7 +113,7 @@ export default function BorrowingPage() {
       </Card>
 
       <Card>
-        <Table columns={columns} dataSource={records} rowKey="id" loading={isLoading} />
+        {isLoading ? <SkeletonTable rows={6} cols={5} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['borrowCode', 'borrowDate', 'status']} />}
       </Card>
 
       <BorrowingForm open={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); qc.invalidateQueries({ queryKey: ['borrowing'] }); qc.invalidateQueries({ queryKey: ['equipment'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />

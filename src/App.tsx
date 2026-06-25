@@ -31,7 +31,7 @@ export default function App() {
     <ConfigProvider theme={{ token: { colorPrimary: '#5c6bc0', borderRadius: 8, fontFamily: "'Noto Sans Lao', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" } }}>
       <AntApp>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route

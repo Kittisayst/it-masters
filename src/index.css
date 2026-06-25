@@ -1,6 +1,26 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Noto Sans Lao', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.content-enter {
+  animation: fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (max-width: 767px) {
+  /* Secondary header actions become icon-only; saves ~80px for the title */
+  .ph-secondary .ant-btn > span:not(.ant-btn-icon) { display: none; }
+
+  /* Filter rows stack full-width on mobile */
+  .filter-row { flex-direction: column !important; }
+  .filter-row > * { width: 100% !important; }
+
+  .ant-card-body { padding: 12px !important; }
+  .ant-table-wrapper { overflow-x: auto; }
+}
+
 @media print {
   .no-print { display: none !important; }
   .ant-layout-sider,
