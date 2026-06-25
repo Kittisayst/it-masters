@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Typography, theme, Grid, Drawer } from 'antd';
 import { useNavigate, useLocation, Outlet } from 'react-router';
 import {
@@ -13,8 +13,12 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   MenuOutlined,
+  BarChartOutlined,
+  QrcodeOutlined,
+  ScanOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/useAuthStore';
+import BottomNav from './BottomNav';
 
 const { Sider, Header, Content } = Layout;
 const { Text } = Typography;
@@ -26,6 +30,9 @@ const navItems = [
   { key: '/equipment',    icon: <LaptopOutlined />,    label: 'ອຸປະກອນ IT' },
   { key: '/borrowing',    icon: <InboxOutlined />,     label: 'ຢືມອຸປະກອນ' },
   { key: '/disbursement', icon: <ExportOutlined />,    label: 'ເບີກຈ່າຍ' },
+  { key: '/reports',     icon: <BarChartOutlined />,   label: 'ລາຍງານ' },
+  { key: '/qr-print',   icon: <QrcodeOutlined />,     label: 'Print QR' },
+  { key: '/qr-scan',    icon: <ScanOutlined />,        label: 'Scan QR' },
   {
     key: 'settings',
     icon: <SettingOutlined />,
@@ -42,26 +49,17 @@ const navItems = [
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const touchStartX = useRef<number | null>(null);
+  const swipeStartX = useRef<number | null>(null);
 
-  useEffect(() => {
-    const onTouchStart = (e: TouchEvent) => {
-      const x = e.touches[0].clientX;
-      touchStartX.current = x < 32 ? x : null;
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      if (touchStartX.current === null) return;
-      const dx = e.changedTouches[0].clientX - touchStartX.current;
-      if (dx > 60) setDrawerOpen(true);
-      touchStartX.current = null;
-    };
-    document.addEventListener('touchstart', onTouchStart);
-    document.addEventListener('touchend', onTouchEnd);
-    return () => {
-      document.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('touchend', onTouchEnd);
-    };
-  }, []);
+  const onSwipeTouchStart = (e: React.TouchEvent) => {
+    swipeStartX.current = e.touches[0].clientX;
+  };
+  const onSwipeTouchEnd = (e: React.TouchEvent) => {
+    if (swipeStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    if (dx > 50) setDrawerOpen(true);
+    swipeStartX.current = null;
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
@@ -105,7 +103,7 @@ export default function AppLayout() {
   );
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', position: 'relative' }}>
       {/* Desktop sidebar */}
       {!isMobile && (
         <Sider
@@ -118,6 +116,23 @@ export default function AppLayout() {
           {sidebarLogo(collapsed)}
           {sidebarMenu}
         </Sider>
+      )}
+
+      {/* Swipe-to-open handle — invisible strip on left edge, mobile only */}
+      {isMobile && !drawerOpen && (
+        <div
+          onTouchStart={onSwipeTouchStart}
+          onTouchEnd={onSwipeTouchEnd}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: 24,
+            height: '100dvh',
+            zIndex: 200,
+            touchAction: 'pan-y',
+          }}
+        />
       )}
 
       {/* Mobile drawer */}
@@ -146,7 +161,10 @@ export default function AppLayout() {
           }}
         >
           {isMobile ? (
-            <span onClick={() => setDrawerOpen(true)} style={{ cursor: 'pointer', fontSize: 18, color: token.colorTextSecondary }}>
+            <span
+              onClick={() => setDrawerOpen(true)}
+              style={{ cursor: 'pointer', fontSize: 20, color: token.colorTextSecondary, padding: '12px 16px 12px 4px', margin: '-12px -16px -12px -4px', display: 'inline-flex', alignItems: 'center' }}
+            >
               <MenuOutlined />
             </span>
           ) : (
@@ -163,9 +181,15 @@ export default function AppLayout() {
           </Dropdown>
         </Header>
 
-        <Content style={{ margin: isMobile ? '12px 8px' : '24px', background: token.colorBgLayout }}>
+        <Content style={{
+          margin: isMobile ? '12px 8px' : '24px',
+          paddingBottom: isMobile ? 'calc(64px + env(safe-area-inset-bottom, 0px))' : undefined,
+          background: token.colorBgLayout,
+        }}>
           <Outlet />
         </Content>
+
+        {isMobile && <BottomNav />}
       </Layout>
     </Layout>
   );

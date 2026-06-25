@@ -14,8 +14,6 @@ import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
 import type { WorkRecord } from '../../types';
 
-const { RangePicker } = DatePicker;
-
 export default function WorkRecordsPage() {
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
@@ -91,37 +89,52 @@ export default function WorkRecordsPage() {
       />
 
       <Card style={{ marginBottom: 16 }}>
-        <div className="filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <RangePicker
-            onChange={(dates) => {
-              if (dates?.[0] && dates?.[1]) {
-                setFilters((f) => ({ ...f, dateFrom: dates[0]!.format('YYYY-MM-DD'), dateTo: dates[1]!.format('YYYY-MM-DD') }));
-              } else {
-                setFilters((f) => { const n = { ...f }; delete n.dateFrom; delete n.dateTo; return n; });
-              }
-            }}
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <DatePicker
+                style={{ width: '100%' }}
+                placeholder="ວັນທີເລີ່ມ"
+                format="DD/MM/YYYY"
+                onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.dateFrom = v.format('YYYY-MM-DD'); else delete n.dateFrom; return n; })}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <DatePicker
+                style={{ width: '100%' }}
+                placeholder="ວັນທີສິ້ນສຸດ"
+                format="DD/MM/YYYY"
+                onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.dateTo = v.format('YYYY-MM-DD'); else delete n.dateTo; return n; })}
+              />
+            </div>
+          </div>
           <Select
-            placeholder="ກ່ອງການ/ພະແນກ"
+            placeholder="ຫ້ອງການ/ພະແນກ"
             allowClear
-            style={{ width: 200 }}
+            style={{ width: '100%' }}
             options={departments.map((d) => ({ value: d.id, label: d.name }))}
             onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.departmentId = v; else delete n.departmentId; return n; })}
           />
-          <Select
-            placeholder="ຜູ້ປະຕິບັດ"
-            allowClear
-            style={{ width: 180 }}
-            options={users.map((u) => ({ value: u.id, label: u.fullName }))}
-            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.staffId = v; else delete n.staffId; return n; })}
-          />
-          <Select
-            placeholder="ສະຖານະ"
-            allowClear
-            style={{ width: 140 }}
-            options={[{ value: 'ສຳເລັດ', label: 'ສຳເລັດ' }, { value: 'ຍັງຄ້າງ', label: 'ຍັງຄ້າງ' }]}
-            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.status = v; else delete n.status; return n; })}
-          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Select
+                placeholder="ຜູ້ປະຕິບັດ"
+                allowClear
+                style={{ width: '100%' }}
+                options={users.map((u) => ({ value: u.id, label: u.fullName }))}
+                onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.staffId = v; else delete n.staffId; return n; })}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Select
+                placeholder="ສະຖານະ"
+                allowClear
+                style={{ width: '100%' }}
+                options={[{ value: 'ສຳເລັດ', label: 'ສຳເລັດ' }, { value: 'ຍັງຄ້າງ', label: 'ຍັງຄ້າງ' }]}
+                onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.status = v; else delete n.status; return n; })}
+              />
+            </div>
+          </div>
         </div>
       </Card>
 

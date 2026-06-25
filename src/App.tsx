@@ -11,6 +11,9 @@ import WorkRecordsPage from './pages/WorkRecords';
 import EquipmentPage from './pages/Equipment';
 import BorrowingPage from './pages/Borrowing';
 import DisbursementPage from './pages/Disbursement';
+import ReportsPage from './pages/Reports';
+import QrPrintPage from './pages/QrPrint';
+import QrScanPage from './pages/QrScan';
 import UsersSettings from './pages/Settings/Users';
 import CategoriesSettings from './pages/Settings/Categories';
 import DepartmentsSettings from './pages/Settings/Departments';
@@ -48,6 +51,9 @@ export default function App() {
                 <Route path="equipment"    element={<EquipmentPage />} />
                 <Route path="borrowing"    element={<BorrowingPage />} />
                 <Route path="disbursement" element={<DisbursementPage />} />
+                <Route path="reports"              element={<ReportsPage />} />
+                <Route path="qr-print"            element={<QrPrintPage />} />
+                <Route path="qr-scan"             element={<QrScanPage />} />
                 <Route path="settings/users"       element={<UsersSettings />} />
                 <Route path="settings/categories"  element={<CategoriesSettings />} />
                 <Route path="settings/departments" element={<DepartmentsSettings />} />
