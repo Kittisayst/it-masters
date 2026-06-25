@@ -82,7 +82,17 @@ export default function DisbursementForm({ open, onClose, onSuccess }: Props) {
         <Form.Item name="note" label="ໝາຍເຫດ">
           <Input.TextArea rows={2} />
         </Form.Item>
-        <Form.Item name="items" label="ລາຍການອຸປະກອນ" rules={[{ required: true, message: 'ກະລຸນາເພີ່ມອຸປະກອນຢ່າງໜ້ອຍ 1 ລາຍການ' }]}>
+        <Form.Item
+          name="items"
+          label="ລາຍການອຸປະກອນ"
+          rules={[{
+            validator: (_, value: ItemRow[]) => {
+              if (!value || value.length === 0) return Promise.reject('ກະລຸນາເພີ່ມອຸປະກອນຢ່າງໜ້ອຍ 1 ລາຍການ');
+              if (value.some((r) => !r.equipmentId)) return Promise.reject('ກະລຸນາເລືອກອຸປະກອນທຸກລາຍການ');
+              return Promise.resolve();
+            },
+          }]}
+        >
           <ItemsTable availableEquipment={availableEquipment} />
         </Form.Item>
       </Form>

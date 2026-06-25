@@ -30,6 +30,7 @@ const navItems = [
     label: 'ຕັ້ງຄ່າ',
     children: [
       { key: '/settings/users',       label: 'ຜູ້ໃຊ້ລະບົບ' },
+      { key: '/settings/categories',  label: 'ປະເພດອຸປະກອນ' },
       { key: '/settings/departments', label: 'ຫ້ອງການ/ພະແນກ' },
       { key: '/settings/employees',   label: 'ພະນັກງານ' },
     ],

@@ -27,7 +27,7 @@ export default function DisbursementPage() {
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['disbursement'],
-    queryFn: async () => (await disbursementApi.findAll()).data as DisbursementHeader[] ?? [],
+    queryFn: async () => (await disbursementApi.findAll()).data ?? [],
   });
 
   const deleteMutation = useMutation({

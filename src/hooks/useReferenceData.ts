@@ -1,43 +1,43 @@
 import { useQuery } from '@tanstack/react-query';
-import { departmentsApi, employeesApi, usersApi, equipmentApi } from '../services/api';
-import type { Department, Employee, User, Equipment } from '../types';
+import { categoriesApi, departmentsApi, employeesApi, usersApi, equipmentApi } from '../services/api';
+import type { Category, Department, Employee, User, Equipment } from '../types';
+
+export function useCategories() {
+  return useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => unwrap(await categoriesApi.findAll(), [] as Category[]),
+  });
+}
+
+function unwrap<T>(res: { success: boolean; data?: T; error?: string }, fallback: T): T {
+  if (!res.success) throw new Error(res.error ?? 'API error');
+  return res.data ?? fallback;
+}
 
 export function useDepartments() {
   return useQuery({
     queryKey: ['departments'],
-    queryFn: async () => {
-      const res = await departmentsApi.findAll();
-      return (res.data as Department[]) ?? [];
-    },
+    queryFn: async () => unwrap(await departmentsApi.findAll(), [] as Department[]),
   });
 }
 
 export function useEmployees() {
   return useQuery({
     queryKey: ['employees'],
-    queryFn: async () => {
-      const res = await employeesApi.findAll();
-      return (res.data as Employee[]) ?? [];
-    },
+    queryFn: async () => unwrap(await employeesApi.findAll(), [] as Employee[]),
   });
 }
 
 export function useUsers() {
   return useQuery({
     queryKey: ['users'],
-    queryFn: async () => {
-      const res = await usersApi.findAll();
-      return (res.data as User[]) ?? [];
-    },
+    queryFn: async () => unwrap(await usersApi.findAll(), [] as User[]),
   });
 }
 
 export function useAvailableEquipment() {
   return useQuery({
     queryKey: ['equipment', 'available'],
-    queryFn: async () => {
-      const res = await equipmentApi.find({ status: 'ປົກກະຕິ' });
-      return (res.data as Equipment[]) ?? [];
-    },
+    queryFn: async () => unwrap(await equipmentApi.find({ status: 'ປົກກະຕິ' }), [] as Equipment[]),
   });
 }

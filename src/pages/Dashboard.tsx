@@ -50,7 +50,7 @@ export default function Dashboard() {
               title="ວຽກມື້ນີ້"
               value={stats?.workToday ?? 0}
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#5c6bc0' }}
+              styles={{ content: { color: '#5c6bc0' } }}
             />
           </Card>
         </Col>
@@ -70,7 +70,7 @@ export default function Dashboard() {
               title="ກຳລັງຢືມ"
               value={stats?.borrowing.active ?? 0}
               prefix={<InboxOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              styles={{ content: { color: '#1890ff' } }}
             />
           </Card>
         </Col>
@@ -80,7 +80,7 @@ export default function Dashboard() {
               title="ເກີນກຳນົດຄືນ"
               value={stats?.borrowing.overdue ?? 0}
               prefix={<WarningOutlined />}
-              valueStyle={{ color: stats?.borrowing.overdue ? '#ff4d4f' : undefined }}
+              styles={{ content: { color: stats?.borrowing.overdue ? '#ff4d4f' : undefined } }}
             />
           </Card>
         </Col>

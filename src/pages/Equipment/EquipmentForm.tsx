@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { equipmentApi } from '../../services/api';
-import { useUsers } from '../../hooks/useReferenceData';
+import { useUsers, useCategories } from '../../hooks/useReferenceData';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { Equipment } from '../../types';
 
@@ -22,6 +22,7 @@ export default function EquipmentForm({ open, equipment, onClose, onSuccess }: P
   const [form] = Form.useForm();
   const currentUser = useAuthStore((s) => s.user);
   const { data: users = [] } = useUsers();
+  const { data: categories = [] } = useCategories();
 
   useEffect(() => {
     if (open) {
@@ -73,6 +74,13 @@ export default function EquipmentForm({ open, equipment, onClose, onSuccess }: P
         </Form.Item>
         <Form.Item name="type" label="ປະເພດ" rules={[{ required: true }]}>
           <Select options={TYPES.map((t) => ({ value: t, label: t }))} />
+        </Form.Item>
+        <Form.Item name="categoryId" label="ໝວດໝູ່">
+          <Select
+            allowClear
+            placeholder="ເລືອກໝວດໝູ່"
+            options={categories.map((c) => ({ value: c.id, label: c.name }))}
+          />
         </Form.Item>
         <Form.Item name="serialNumber" label="Serial Number">
           <Input />

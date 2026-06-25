@@ -12,17 +12,34 @@ import { describe, test, expect, beforeAll } from 'vitest';
 // ── HTTP client (same CORS fix as the app) ──────────────────────────────────
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string;
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function call<T = unknown>(
   action: string,
   method: string,
   params: Record<string, unknown> = {},
+  retries = 2,
 ): Promise<{ success: boolean; data: T; error?: string }> {
-  const res = await axios.post(
-    API_URL,
-    JSON.stringify({ action, method, params }),
-    { headers: { 'Content-Type': 'text/plain' } },
-  );
-  return res.data;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await axios.post(
+        API_URL,
+        JSON.stringify({ action, method, params }),
+        { headers: { 'Content-Type': 'text/plain' }, timeout: 25000 },
+      );
+      return res.data;
+    } catch (err: unknown) {
+      if (attempt === retries) throw err;
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      // retry on 404 (Apps Script not ready) or 429 (rate limit)
+      if (status === 404 || status === 429 || status === 500) {
+        await sleep(3000 * (attempt + 1));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error('unreachable');
 }
 
 // ── Guard: skip all tests if no URL configured ──────────────────────────────
@@ -232,6 +249,7 @@ describe('Equipment CRUD', () => {
 // Borrowing
 // ════════════════════════════════════════════════════════════════════════════
 describe('Borrowing CRUD', () => {
+  beforeAll(() => sleep(2000));
   let headerId: string;
   let equipId: string;
   const today = new Date().toISOString().split('T')[0];
@@ -299,6 +317,7 @@ describe('Borrowing CRUD', () => {
 // Disbursement
 // ════════════════════════════════════════════════════════════════════════════
 describe('Disbursement CRUD', () => {
+  beforeAll(() => sleep(2000));
   let headerId: string;
   let equipId: string;
   const today = new Date().toISOString().split('T')[0];

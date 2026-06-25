@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse } from '../types';
+import type { ApiResponse, Category, Department, Employee, Equipment, User, WorkRecord, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats } from '../types';
 
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string;
 
@@ -27,51 +27,58 @@ export const authApi = {
 };
 
 // Settings
+export const categoriesApi = {
+  findAll: () => callApi<Category[]>('categories', 'findAll'),
+  insert: (data: Record<string, unknown>) => callApi<Category>('categories', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<Category>('categories', 'update', { id, data }),
+  delete: (id: string) => callApi('categories', 'delete', { id }),
+};
+
 export const usersApi = {
-  findAll: () => callApi('users', 'findAll'),
-  insert: (data: Record<string, unknown>) => callApi('users', 'insert', data),
-  update: (id: string, data: Record<string, unknown>) => callApi('users', 'update', { id, data }),
+  findAll: () => callApi<User[]>('users', 'findAll'),
+  insert: (data: Record<string, unknown>) => callApi<User>('users', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<User>('users', 'update', { id, data }),
   delete: (id: string) => callApi('users', 'delete', { id }),
 };
 
 export const departmentsApi = {
-  findAll: () => callApi('departments', 'findAll'),
-  insert: (data: Record<string, unknown>) => callApi('departments', 'insert', data),
-  update: (id: string, data: Record<string, unknown>) => callApi('departments', 'update', { id, data }),
+  findAll: () => callApi<Department[]>('departments', 'findAll'),
+  insert: (data: Record<string, unknown>) => callApi<Department>('departments', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<Department>('departments', 'update', { id, data }),
   delete: (id: string) => callApi('departments', 'delete', { id }),
 };
 
 export const employeesApi = {
-  findAll: () => callApi('employees', 'findAll'),
-  insert: (data: Record<string, unknown>) => callApi('employees', 'insert', data),
-  update: (id: string, data: Record<string, unknown>) => callApi('employees', 'update', { id, data }),
+  findAll: () => callApi<Employee[]>('employees', 'findAll'),
+  insert: (data: Record<string, unknown>) => callApi<Employee>('employees', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<Employee>('employees', 'update', { id, data }),
   delete: (id: string) => callApi('employees', 'delete', { id }),
 };
 
 // WorkRecords
 export const workRecordsApi = {
-  findAll: () => callApi('workRecords', 'findAll'),
-  find: (params: Record<string, unknown>) => callApi('workRecords', 'find', params),
-  insert: (data: Record<string, unknown>) => callApi('workRecords', 'insert', data),
-  update: (id: string, data: Record<string, unknown>) => callApi('workRecords', 'update', { id, data }),
+  findAll: () => callApi<WorkRecord[]>('workRecords', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<WorkRecord[]>('workRecords', 'find', params),
+  insert: (data: Record<string, unknown>) => callApi<WorkRecord>('workRecords', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<WorkRecord>('workRecords', 'update', { id, data }),
   delete: (id: string) => callApi('workRecords', 'delete', { id }),
 };
 
 // Equipment
 export const equipmentApi = {
-  findAll: () => callApi('equipment', 'findAll'),
-  find: (params: Record<string, unknown>) => callApi('equipment', 'find', params),
-  insert: (data: Record<string, unknown>) => callApi('equipment', 'insert', data),
-  update: (id: string, data: Record<string, unknown>) => callApi('equipment', 'update', { id, data }),
+  findAll: () => callApi<Equipment[]>('equipment', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<Equipment[]>('equipment', 'find', params),
+  insert: (data: Record<string, unknown>) => callApi<Equipment>('equipment', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<Equipment>('equipment', 'update', { id, data }),
   delete: (id: string) => callApi('equipment', 'delete', { id }),
   stats: () => callApi('equipment', 'stats'),
 };
 
 // Borrowing
 export const borrowingApi = {
-  findAll: () => callApi('borrowing', 'findAll'),
-  find: (params: Record<string, unknown>) => callApi('borrowing', 'find', params),
-  findById: (id: string) => callApi('borrowing', 'findById', { id }),
+  findAll: () => callApi<BorrowingHeader[]>('borrowing', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<BorrowingHeader[]>('borrowing', 'find', params),
+  findById: (id: string) => callApi<BorrowingDetail>('borrowing', 'findById', { id }), // returns { header, items }
   insert: (header: Record<string, unknown>, items: Record<string, unknown>[]) =>
     callApi('borrowing', 'insert', { header, items }),
   update: (id: string, data: Record<string, unknown>) => callApi('borrowing', 'update', { id, data }),
@@ -82,9 +89,9 @@ export const borrowingApi = {
 
 // Disbursement
 export const disbursementApi = {
-  findAll: () => callApi('disbursement', 'findAll'),
-  find: (params: Record<string, unknown>) => callApi('disbursement', 'find', params),
-  findById: (id: string) => callApi('disbursement', 'findById', { id }),
+  findAll: () => callApi<DisbursementHeader[]>('disbursement', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<DisbursementHeader[]>('disbursement', 'find', params),
+  findById: (id: string) => callApi<DisbursementDetail>('disbursement', 'findById', { id }),
   insert: (header: Record<string, unknown>, items: Record<string, unknown>[]) =>
     callApi('disbursement', 'insert', { header, items }),
   delete: (id: string) => callApi('disbursement', 'delete', { id }),
@@ -92,7 +99,7 @@ export const disbursementApi = {
 
 // Dashboard
 export const dashboardApi = {
-  stats: () => callApi('dashboard', 'stats'),
-  recentWorkRecords: (limit = 10) => callApi('dashboard', 'recentWorkRecords', { limit }),
-  overdueBorrowing: () => callApi('dashboard', 'overdueBorrowing'),
+  stats: () => callApi<DashboardStats>('dashboard', 'stats'),
+  recentWorkRecords: (limit = 10) => callApi<WorkRecord[]>('dashboard', 'recentWorkRecords', { limit }),
+  overdueBorrowing: () => callApi<BorrowingHeader[]>('dashboard', 'overdueBorrowing'),
 };

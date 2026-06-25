@@ -12,6 +12,7 @@ import EquipmentPage from './pages/Equipment';
 import BorrowingPage from './pages/Borrowing';
 import DisbursementPage from './pages/Disbursement';
 import UsersSettings from './pages/Settings/Users';
+import CategoriesSettings from './pages/Settings/Categories';
 import DepartmentsSettings from './pages/Settings/Departments';
 import EmployeesSettings from './pages/Settings/Employees';
 
@@ -27,7 +28,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: '#5c6bc0', borderRadius: 8 } }}>
+    <ConfigProvider theme={{ token: { colorPrimary: '#5c6bc0', borderRadius: 8, fontFamily: "'Noto Sans Lao', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" } }}>
       <AntApp>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
@@ -48,6 +49,7 @@ export default function App() {
                 <Route path="borrowing"    element={<BorrowingPage />} />
                 <Route path="disbursement" element={<DisbursementPage />} />
                 <Route path="settings/users"       element={<UsersSettings />} />
+                <Route path="settings/categories"  element={<CategoriesSettings />} />
                 <Route path="settings/departments" element={<DepartmentsSettings />} />
                 <Route path="settings/employees"   element={<EmployeesSettings />} />
               </Route>

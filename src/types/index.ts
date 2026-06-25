@@ -13,6 +13,14 @@ export interface Department {
   code: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  description: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Employee {
   id: string;
   fullName: string;
@@ -38,7 +46,8 @@ export interface Equipment {
   id: string;
   code: string;
   name: string;
-  type: 'ຄອມ' | 'Printer' | 'Projector' | 'Network' | 'ອື່ນໆ';
+  type: string;
+  categoryId?: string;
   serialNumber: string;
   location: string;
   status: 'ປົກກະຕິ' | 'ສ້ອມແປງ' | 'ປົດລຶບ' | 'ຖືກຢືມ' | 'ຖືກເບີກ';

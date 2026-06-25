@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import { equipmentApi } from '../../services/api';
-import { useUsers } from '../../hooks/useReferenceData';
+import { useUsers, useCategories } from '../../hooks/useReferenceData';
 import StatusBadge from '../../components/common/StatusBadge';
 import EquipmentForm from './EquipmentForm';
 import { exportToExcel } from '../../utils/exportExcel';
@@ -23,6 +23,7 @@ export default function EquipmentPage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
 
   const { data: users = [] } = useUsers();
+  const { data: categories = [] } = useCategories();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['equipment', filters],
@@ -41,11 +42,13 @@ export default function EquipmentPage() {
   });
 
   const userMap = Object.fromEntries(users.map((u) => [u.id, u.fullName]));
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
   const columns = [
     { title: 'ລະຫັດ', dataIndex: 'code', width: 90 },
     { title: 'ຊື່ອຸປະກອນ', dataIndex: 'name' },
     { title: 'ປະເພດ', dataIndex: 'type', width: 100 },
+    { title: 'ໝວດໝູ່', dataIndex: 'categoryId', width: 120, render: (v: string) => categoryMap[v] ?? '-' },
     { title: 'Serial', dataIndex: 'serialNumber', width: 130 },
     { title: 'ສະຖານທີ', dataIndex: 'location' },
     { title: 'ສະຖານະ', dataIndex: 'status', render: (v: string) => <StatusBadge status={v} /> },
@@ -70,6 +73,7 @@ export default function EquipmentPage() {
       ລະຫັດ: e.code,
       ຊື່ອຸປະກອນ: e.name,
       ປະເພດ: e.type,
+      ໝວດໝູ່: categoryMap[e.categoryId ?? ''] ?? '',
       'Serial Number': e.serialNumber,
       ສະຖານທີ: e.location,
       ສະຖານະ: e.status,
@@ -100,14 +104,21 @@ export default function EquipmentPage() {
             allowClear
             style={{ width: 160 }}
             options={TYPES.map((t) => ({ value: t, label: t }))}
-            onChange={(v) => setFilters((f) => v ? { ...f, type: v } : (({ type: _, ...rest }) => rest)(f))}
+            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.type = v; else delete n.type; return n; })}
           />
           <Select
             placeholder="ສະຖານະ"
             allowClear
             style={{ width: 160 }}
             options={STATUSES.map((s) => ({ value: s, label: s }))}
-            onChange={(v) => setFilters((f) => v ? { ...f, status: v } : (({ status: _, ...rest }) => rest)(f))}
+            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.status = v; else delete n.status; return n; })}
+          />
+          <Select
+            placeholder="ໝວດໝູ່"
+            allowClear
+            style={{ width: 160 }}
+            options={categories.map((c) => ({ value: c.id, label: c.name }))}
+            onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.categoryId = v; else delete n.categoryId; return n; })}
           />
         </Space>
       </Card>

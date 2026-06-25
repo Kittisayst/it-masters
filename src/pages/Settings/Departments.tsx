@@ -36,7 +36,7 @@ export default function DepartmentsSettings() {
 
   const openForm = (dept?: Department) => {
     setEditing(dept ?? null);
-    dept ? form.setFieldsValue(dept) : form.resetFields();
+    if (dept) form.setFieldsValue(dept); else form.resetFields();
     setFormOpen(true);
   };
 

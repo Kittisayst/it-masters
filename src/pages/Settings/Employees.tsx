@@ -41,7 +41,7 @@ export default function EmployeesSettings() {
 
   const openForm = (emp?: Employee) => {
     setEditing(emp ?? null);
-    emp ? form.setFieldsValue(emp) : form.resetFields();
+    if (emp) form.setFieldsValue(emp); else form.resetFields();
     setFormOpen(true);
   };
 
