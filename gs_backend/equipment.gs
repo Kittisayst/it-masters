@@ -6,15 +6,22 @@ function handleEquipment(method, params) {
   var table = getEquipmentTable();
 
   if (method === 'findAll') {
-    return table.orderBy('code', 'ASC').get();
+    var all = table.findAll();
+    if (all.success) all.data.sort(function(a, b) { return a.code > b.code ? 1 : -1; });
+    return all;
   }
 
   if (method === 'find') {
-    var q = table;
-    if (params.type)   q = q.where('type', '=', params.type);
-    if (params.status) q = q.where('status', '=', params.status);
-    if (params.name)   q = q.where('name', 'contains', params.name);
-    return q.orderBy('code', 'ASC').get();
+    var all = table.findAll();
+    if (!all.success) return all;
+    var filtered = all.data.filter(function(e) {
+      if (params.type   && e.type   !== params.type)               return false;
+      if (params.status && e.status !== params.status)             return false;
+      if (params.name   && e.name.indexOf(params.name) === -1)     return false;
+      return true;
+    });
+    filtered.sort(function(a, b) { return a.code > b.code ? 1 : -1; });
+    return { success: true, data: filtered };
   }
 
   if (method === 'findById')  return table.findById(params.id);

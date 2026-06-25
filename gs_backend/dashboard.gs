@@ -6,7 +6,8 @@ function handleDashboard(method, params) {
   if (method === 'stats') {
     var today = new Date().toISOString().split('T')[0];
 
-    var workToday = getWorkRecordsTable().where('date', '=', today).get();
+    var allWork = getWorkRecordsTable().findAll();
+    var workToday = { success: allWork.success, data: allWork.success ? allWork.data.filter(function(r) { return r.date === today; }) : [] };
     var equipment = getEquipmentTable().findAll();
     var borrowing = getBorrowingHeaderTable().findAll();
 
@@ -40,17 +41,19 @@ function handleDashboard(method, params) {
   }
 
   if (method === 'recentWorkRecords') {
-    return getWorkRecordsTable()
-      .orderBy('date', 'DESC')
-      .limit(params.limit || 10)
-      .get();
+    var limit = params.limit || 10;
+    var all = getWorkRecordsTable().findAll();
+    if (!all.success) return all;
+    all.data.sort(function(a, b) { return b.date > a.date ? 1 : -1; });
+    return { success: true, data: all.data.slice(0, limit) };
   }
 
   if (method === 'overdueBorrowing') {
-    return getBorrowingHeaderTable()
-      .where('status', '=', 'ເກີນກຳນົດ')
-      .orderBy('dueDate', 'ASC')
-      .get();
+    var all = getBorrowingHeaderTable().findAll();
+    if (!all.success) return all;
+    var overdue = all.data.filter(function(b) { return b.status === 'ເກີນກຳນົດ'; });
+    overdue.sort(function(a, b) { return a.dueDate > b.dueDate ? 1 : -1; });
+    return { success: true, data: overdue };
   }
 
   return { success: false, error: 'Unknown dashboard method: ' + method };

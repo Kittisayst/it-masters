@@ -3,11 +3,11 @@
 // ====================================================
 
 function generateDisbursementCode() {
-  var headers = getDisbursementHeaderTable().orderBy('disbursementCode', 'DESC').limit(1).get();
-  if (!headers.success || headers.data.length === 0) return 'D-001';
-  var last = headers.data[0].disbursementCode;
-  var num = parseInt(last.replace('D-', ''), 10) + 1;
-  return 'D-' + String(num).padStart(3, '0');
+  var all = getDisbursementHeaderTable().findAll();
+  if (!all.success || all.data.length === 0) return 'D-001';
+  var codes = all.data.map(function(h) { return parseInt((h.disbursementCode || 'D-000').replace('D-', ''), 10); });
+  var max = Math.max.apply(null, codes);
+  return 'D-' + String(max + 1).padStart(3, '0');
 }
 
 function handleDisbursement(method, params) {
@@ -16,25 +16,37 @@ function handleDisbursement(method, params) {
   var equip   = getEquipmentTable();
 
   if (method === 'findAll') {
-    return headers.orderBy('disbursementDate', 'DESC').get();
+    var all = headers.findAll();
+    if (all.success) all.data.sort(function(a, b) { return b.disbursementDate > a.disbursementDate ? 1 : -1; });
+    return all;
   }
 
   if (method === 'find') {
-    var q = headers;
-    if (params.recipientId)  q = q.where('recipientId', '=', params.recipientId);
-    if (params.departmentId) q = q.where('departmentId', '=', params.departmentId);
-    return q.orderBy('disbursementDate', 'DESC').get();
+    var all = headers.findAll();
+    if (!all.success) return all;
+    var filtered = all.data.filter(function(h) {
+      if (params.recipientId  && h.recipientId  !== params.recipientId)  return false;
+      if (params.departmentId && h.departmentId !== params.departmentId) return false;
+      return true;
+    });
+    filtered.sort(function(a, b) { return b.disbursementDate > a.disbursementDate ? 1 : -1; });
+    return { success: true, data: filtered };
   }
 
   if (method === 'findById') {
     var header = headers.findById(params.id);
     if (!header.success) return header;
-    var disbItems = items.where('disbursementId', '=', params.id).get();
-    return { success: true, data: { header: header.data, items: disbItems.data || [] } };
+    var allItems = items.findAll();
+    var disbItems = allItems.success
+      ? allItems.data.filter(function(i) { return i.disbursementId === params.id; })
+      : [];
+    return { success: true, data: { header: header.data, items: disbItems } };
   }
 
   if (method === 'getItems') {
-    return items.where('disbursementId', '=', params.disbursementId).get();
+    var allItems = items.findAll();
+    if (!allItems.success) return allItems;
+    return { success: true, data: allItems.data.filter(function(i) { return i.disbursementId === params.disbursementId; }) };
   }
 
   if (method === 'insert') {
@@ -49,7 +61,6 @@ function handleDisbursement(method, params) {
     (params.items || []).forEach(function(item) {
       var inserted = items.insert({ disbursementId: disbursementId, equipmentId: item.equipmentId, note: item.note || '' });
       if (inserted.success) {
-        // Permanently mark as disbursed + update location to recipient's department
         equip.update(item.equipmentId, { status: 'ຖືກເບີກ', location: headerData.departmentId });
       } else {
         itemErrors.push(item.equipmentId);
@@ -64,12 +75,14 @@ function handleDisbursement(method, params) {
   }
 
   if (method === 'delete') {
-    var disbItems = items.where('disbursementId', '=', params.id).get();
-    if (disbItems.success) {
-      disbItems.data.forEach(function(item) {
-        items.delete(item.id);
-        equip.update(item.equipmentId, { status: 'ປົກກະຕິ' });
-      });
+    var allItems = items.findAll();
+    if (allItems.success) {
+      allItems.data
+        .filter(function(i) { return i.disbursementId === params.id; })
+        .forEach(function(item) {
+          items.delete(item.id);
+          equip.update(item.equipmentId, { status: 'ປົກກະຕິ' });
+        });
     }
     return headers.delete(params.id);
   }

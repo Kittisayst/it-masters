@@ -1,58 +1,62 @@
-import { HashRouter, Routes, Route } from 'react-router-dom'
-import { ConfigProvider } from 'antd'
-import { AuthProvider } from './contexts/AuthContext'
-import { useLoadData } from './hooks/useLoadData'
-import { antdTheme } from './config/antd-theme'
-import ProtectedRoute from './components/ProtectedRoute'
-import ErrorBoundary from './components/ErrorBoundary'
-import Layout from './components/Layout'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Repairs from './pages/Repairs'
-import Tasks from './pages/Tasks'
-import RepairReports from './pages/RepairReports'
-import WorkReports from './pages/WorkReports'
-import Users from './pages/Users'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ConfigProvider, App as AntApp } from 'antd';
+import { Toaster } from 'sonner';
 
-function AppContent() {
-  // ໂຫຼດຂໍ້ມູນຈາກ Google Sheets ຕອນເລີ່ມຕົ້ນ
-  useLoadData()
+import { useAuthStore } from './store/useAuthStore';
+import AppLayout from './components/Layout/AppLayout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import WorkRecordsPage from './pages/WorkRecords';
+import EquipmentPage from './pages/Equipment';
+import BorrowingPage from './pages/Borrowing';
+import DisbursementPage from './pages/Disbursement';
+import UsersSettings from './pages/Settings/Users';
+import DepartmentsSettings from './pages/Settings/Departments';
+import EmployeesSettings from './pages/Settings/Employees';
 
-  return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Dashboard />} />
-        <Route path="repairs" element={<Repairs />} />
-        <Route path="tasks" element={<Tasks />} />
-        <Route path="repair-reports" element={<RepairReports />} />
-        <Route path="work-reports" element={<WorkReports />} />
-        <Route path="users" element={
-          <ProtectedRoute requiredRole="admin">
-            <Users />
-          </ProtectedRoute>
-        } />
-      </Route>
-    </Routes>
-  )
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 1000 * 60 * 5 } },
+});
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 }
 
-function App() {
+export default function App() {
   return (
-    <ErrorBoundary>
-      <ConfigProvider theme={antdTheme}>
-        <HashRouter>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
-        </HashRouter>
-      </ConfigProvider>
-    </ErrorBoundary>
-  )
+    <ConfigProvider theme={{ token: { colorPrimary: '#5c6bc0', borderRadius: 8 } }}>
+      <AntApp>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard"    element={<Dashboard />} />
+                <Route path="work-records" element={<WorkRecordsPage />} />
+                <Route path="equipment"    element={<EquipmentPage />} />
+                <Route path="borrowing"    element={<BorrowingPage />} />
+                <Route path="disbursement" element={<DisbursementPage />} />
+                <Route path="settings/users"       element={<UsersSettings />} />
+                <Route path="settings/departments" element={<DepartmentsSettings />} />
+                <Route path="settings/employees"   element={<EmployeesSettings />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster richColors position="top-right" />
+        </QueryClientProvider>
+      </AntApp>
+    </ConfigProvider>
+  );
 }
-
-export default App

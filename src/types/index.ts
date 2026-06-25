@@ -1,0 +1,124 @@
+export interface User {
+  id: string;
+  username: string;
+  fullName: string;
+  position: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface Employee {
+  id: string;
+  fullName: string;
+  position: string;
+  departmentId: string;
+  phone: string;
+}
+
+export interface WorkRecord {
+  id: string;
+  date: string;
+  staffId: string;
+  departmentId: string;
+  location: string;
+  workType: 'ສ້ອມແປງ' | 'ຕິດຕັ້ງ' | 'ສະໜັບສະໜູນ' | 'ອື່ນໆ';
+  description: string;
+  status: 'ສຳເລັດ' | 'ຍັງຄ້າງ';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Equipment {
+  id: string;
+  code: string;
+  name: string;
+  type: 'ຄອມ' | 'Printer' | 'Projector' | 'Network' | 'ອື່ນໆ';
+  serialNumber: string;
+  location: string;
+  status: 'ປົກກະຕິ' | 'ສ້ອມແປງ' | 'ປົດລຶບ' | 'ຖືກຢືມ' | 'ຖືກເບີກ';
+  receivedDate: string;
+  fundSource: string;
+  price: number;
+  recordedBy: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BorrowingHeader {
+  id: string;
+  borrowCode: string;
+  borrowerId: string;
+  departmentId: string;
+  borrowDate: string;
+  dueDate: string;
+  returnDate?: string;
+  approvedBy: string;
+  note: string;
+  status: 'ກຳລັງຢືມ' | 'ຄືນແລ້ວ' | 'ເກີນກຳນົດ';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BorrowingItem {
+  id: string;
+  borrowingId: string;
+  equipmentId: string;
+  note: string;
+}
+
+export interface BorrowingDetail {
+  header: BorrowingHeader;
+  items: BorrowingItem[];
+}
+
+export interface DisbursementHeader {
+  id: string;
+  disbursementCode: string;
+  recipientId: string;
+  departmentId: string;
+  disbursementDate: string;
+  approvedBy: string;
+  note: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DisbursementItem {
+  id: string;
+  disbursementId: string;
+  equipmentId: string;
+  note: string;
+}
+
+export interface DisbursementDetail {
+  header: DisbursementHeader;
+  items: DisbursementItem[];
+}
+
+export interface DashboardStats {
+  workToday: number;
+  equipment: {
+    total: number;
+    available: number;
+    borrowed: number;
+    repair: number;
+    disbursed: number;
+  };
+  borrowing: {
+    active: number;
+    overdue: number;
+  };
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  type?: string;
+}

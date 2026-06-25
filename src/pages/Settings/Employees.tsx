@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { employeesApi } from '../../services/api';
+import { useDepartments } from '../../hooks/useReferenceData';
+import type { Employee } from '../../types';
+
+const { Title } = Typography;
+
+export default function EmployeesSettings() {
+  const qc = useQueryClient();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Employee | null>(null);
+  const [form] = Form.useForm();
+
+  const { data: departments = [] } = useDepartments();
+
+  const { data = [], isLoading } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => (await employeesApi.findAll()).data as Employee[] ?? [],
+  });
+
+  const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.name]));
+
+  const saveMutation = useMutation({
+    mutationFn: (values: Record<string, unknown>) =>
+      editing ? employeesApi.update(editing.id, values) : employeesApi.insert(values),
+    onSuccess: (res) => {
+      if (res.success) { toast.success('ບັນທຶກສຳເລັດ'); qc.invalidateQueries({ queryKey: ['employees'] }); setFormOpen(false); }
+      else toast.error(res.error ?? 'ບໍ່ສຳເລັດ');
+    },
+    onError: () => toast.error('ເກີດຂໍ້ຜິດພາດ'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => employeesApi.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['employees'] }); toast.success('ລົບສຳເລັດ'); },
+  });
+
+  const openForm = (emp?: Employee) => {
+    setEditing(emp ?? null);
+    emp ? form.setFieldsValue(emp) : form.resetFields();
+    setFormOpen(true);
+  };
+
+  const columns = [
+    { title: 'ຊື່ເຕັມ', dataIndex: 'fullName' },
+    { title: 'ຕຳແໜ່ງ', dataIndex: 'position' },
+    { title: 'ຫ້ອງການ', dataIndex: 'departmentId', render: (v: string) => deptMap[v] ?? v },
+    { title: 'ເບີໂທ', dataIndex: 'phone', width: 130 },
+    {
+      title: '', width: 80,
+      render: (_: unknown, row: Employee) => (
+        <Space>
+          <Button size="small" icon={<EditOutlined />} onClick={() => openForm(row)} />
+          <Popconfirm title="ຢືນຢັນລົບ?" onConfirm={() => deleteMutation.mutate(row.id)}>
+            <Button size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Title level={4} style={{ margin: 0 }}>ພະນັກງານ (ຜູ້ຢືມ/ຮັບ)</Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}>ເພີ່ມ</Button>
+      </div>
+      <Card>
+        <Table columns={columns} dataSource={data} rowKey="id" loading={isLoading} />
+      </Card>
+      <Modal
+        title={editing ? 'ແກ້ໄຂ' : 'ເພີ່ມພະນັກງານ'}
+        open={formOpen}
+        onCancel={() => setFormOpen(false)}
+        onOk={() => form.submit()}
+        confirmLoading={saveMutation.isPending}
+      >
+        <Form form={form} layout="vertical" onFinish={(v) => saveMutation.mutate(v)}>
+          <Form.Item name="fullName" label="ຊື່ເຕັມ" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="position" label="ຕຳແໜ່ງ">
+            <Input />
+          </Form.Item>
+          <Form.Item name="departmentId" label="ຫ້ອງການ/ພະແນກ">
+            <Select options={departments.map((d) => ({ value: d.id, label: d.name }))} />
+          </Form.Item>
+          <Form.Item name="phone" label="ເບີໂທ">
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+}

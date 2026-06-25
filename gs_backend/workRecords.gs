@@ -6,17 +6,24 @@ function handleWorkRecords(method, params) {
   var table = getWorkRecordsTable();
 
   if (method === 'findAll') {
-    return table.orderBy('date', 'DESC').get();
+    var all = table.findAll();
+    if (all.success) all.data.sort(function(a, b) { return b.date > a.date ? 1 : -1; });
+    return all;
   }
 
   if (method === 'find') {
-    var q = table;
-    if (params.staffId)      q = q.where('staffId', '=', params.staffId);
-    if (params.departmentId) q = q.where('departmentId', '=', params.departmentId);
-    if (params.status)       q = q.where('status', '=', params.status);
-    if (params.dateFrom)     q = q.where('date', '>=', params.dateFrom);
-    if (params.dateTo)       q = q.where('date', '<=', params.dateTo);
-    return q.orderBy('date', 'DESC').get();
+    var all = table.findAll();
+    if (!all.success) return all;
+    var filtered = all.data.filter(function(r) {
+      if (params.staffId      && r.staffId      !== params.staffId)      return false;
+      if (params.departmentId && r.departmentId !== params.departmentId) return false;
+      if (params.status       && r.status       !== params.status)       return false;
+      if (params.dateFrom     && r.date < params.dateFrom)               return false;
+      if (params.dateTo       && r.date > params.dateTo)                 return false;
+      return true;
+    });
+    filtered.sort(function(a, b) { return b.date > a.date ? 1 : -1; });
+    return { success: true, data: filtered };
   }
 
   if (method === 'findById') return table.findById(params.id);
@@ -26,8 +33,9 @@ function handleWorkRecords(method, params) {
 
   if (method === 'todayCount') {
     var today = new Date().toISOString().split('T')[0];
-    var result = table.where('date', '=', today).get();
-    return { success: true, data: { count: result.success ? result.data.length : 0 } };
+    var all = table.findAll();
+    var count = all.success ? all.data.filter(function(r) { return r.date === today; }).length : 0;
+    return { success: true, data: { count: count } };
   }
 
   return { success: false, error: 'Unknown workRecords method: ' + method };
