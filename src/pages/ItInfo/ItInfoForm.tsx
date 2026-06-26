@@ -58,7 +58,6 @@ export default function ItInfoForm({ open, record, onClose, onSuccess }: Props) 
       onOk={() => form.submit()}
       confirmLoading={mutation.isPending}
       width={560}
-      destroyOnHide
     >
       <Form
         form={form}
