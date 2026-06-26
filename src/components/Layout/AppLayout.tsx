@@ -16,6 +16,7 @@ import {
   BarChartOutlined,
   QrcodeOutlined,
   ScanOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/useAuthStore';
 import BottomNav from './BottomNav';
@@ -31,6 +32,7 @@ const navItems = [
   { key: '/borrowing',    icon: <InboxOutlined />,     label: 'ຢືມອຸປະກອນ' },
   { key: '/disbursement', icon: <ExportOutlined />,    label: 'ເບີກຈ່າຍ' },
   { key: '/reports',     icon: <BarChartOutlined />,   label: 'ລາຍງານ' },
+  { key: '/it-info',    icon: <KeyOutlined />,         label: 'ຂໍ້ມູນ IT' },
   { key: '/qr-print',   icon: <QrcodeOutlined />,     label: 'Print QR' },
   { key: '/qr-scan',    icon: <ScanOutlined />,        label: 'Scan QR' },
   {

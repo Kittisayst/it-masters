@@ -37,7 +37,8 @@ function doPost(e) {
       equipment:    handleEquipment,
       borrowing:    handleBorrowing,
       disbursement: handleDisbursement,
-      dashboard:    handleDashboard
+      dashboard:    handleDashboard,
+      itInfo:       handleItInfo
     };
 
     if (!handlers[action]) {

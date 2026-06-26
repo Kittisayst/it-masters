@@ -129,6 +129,26 @@ function getDisbursementItemsTable() {
   });
 }
 
+function getItInfoTable() {
+  return getDb().table('ItInfo').schema({
+    id:         { type: 'string' },
+    category:   { type: 'string', required: true, enum: ['wifi', 'camera', 'printer', 'account', 'server', 'other'] },
+    name:       { type: 'string', required: true },
+    location:   { type: 'string' },
+    ipAddress:  { type: 'string' },
+    macAddress: { type: 'string' },
+    username:   { type: 'string' },
+    password:   { type: 'string' },
+    brand:      { type: 'string' },
+    model:      { type: 'string' },
+    url:        { type: 'string' },
+    notes:      { type: 'string' },
+    status:     { type: 'string', required: true, enum: ['ໃຊ້ງານ', 'ບໍ່ໃຊ້ງານ'], default: 'ໃຊ້ງານ' },
+    recordedBy: { type: 'string' },
+    updatedAt:  { type: 'string' }
+  });
+}
+
 // ====================================================
 // Migration — run once to create all sheets
 // ====================================================
@@ -185,6 +205,13 @@ function runMigrations() {
       version: '008', name: 'create_categories',
       up: function(db) { db.createTable('Categories', ['id','name','description','createdAt','updatedAt']); },
       down: function(db) { db.dropTable('Categories'); }
+    },
+    {
+      version: '009', name: 'create_itinfo',
+      up: function(db) {
+        db.createTable('ItInfo', ['id','category','name','location','ipAddress','macAddress','username','password','brand','model','url','notes','status','recordedBy','updatedAt']);
+      },
+      down: function(db) { db.dropTable('ItInfo'); }
     }
   ];
   var result = SheetORM.migrate(SPREADSHEET_ID, migrations);
@@ -278,6 +305,45 @@ function runSeedEquipment() {
     { code: 'IT-004', name: 'Cisco Switch 24-port',       type: 'Network',        categoryId: catMap['Network'],       serialNumber: 'CS-2023-001', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-09-05', fundSource: 'ໂຄງການ JICA',   price: 9000000,  recordedBy: adminId },
     { code: 'IT-005', name: 'Dell Desktop OptiPlex 3090', type: 'ຄອມ',            categoryId: catMap['ຄອມພິວເຕີ'],    serialNumber: 'DK-2022-001', location: 'ຫ້ອງ Lab 1',  status: 'ປົກກະຕິ', receivedDate: '2022-06-20', fundSource: 'ງົບປະມານ 2022',  price: 7000000,  recordedBy: adminId },
     { code: 'IT-006', name: 'APC UPS 1000VA',             type: 'ອຸປະກອນໄຟຟ້າ', categoryId: catMap['ອຸປະກອນໄຟຟ້າ'], serialNumber: 'APC-2023-01', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-03-15', fundSource: 'ງົບປະມານ 2023',  price: 2500000,  recordedBy: adminId }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Migration 009 only — run if sheet ItInfo missing
+// ====================================================
+function runMigration009_ItInfo() {
+  var result = SheetORM.migrate(SPREADSHEET_ID, [
+    {
+      version: '009', name: 'create_itinfo',
+      up: function(db) {
+        db.createTable('ItInfo', ['id','category','name','location','ipAddress','macAddress','username','password','brand','model','url','notes','status','recordedBy','updatedAt']);
+      },
+      down: function(db) { db.dropTable('ItInfo'); }
+    }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Seed itInfo — sample data for each category
+// ====================================================
+function runSeedItInfo() {
+  var users = getUsersTable().findAll();
+  if (!users.success || !users.data.length) { Logger.log('Users not found'); return; }
+  var adminId = users.data[0].id;
+  var now = new Date().toISOString();
+
+  var result = getItInfoTable().insertMany([
+    { category: 'wifi',    name: 'WiFi ຫ້ອງ Admin',        location: 'ອາຄານ A ຊັ້ນ 1', username: 'LPTVT_Admin',   password: 'admin@2024',   brand: 'TP-Link',   model: 'TL-WR841N',    status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'wifi',    name: 'WiFi ຫ້ອງ Lab',           location: 'ອາຄານ B ຊັ້ນ 1', username: 'LPTVT_Lab',     password: 'lab@2024',     brand: 'TP-Link',   model: 'TL-WR940N',    status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'camera',  name: 'Camera ທາງເຂົ້າຫຼັກ',    location: 'ປະຕູໜ້າ',        ipAddress: '192.168.1.101', macAddress: 'AA:BB:CC:01:01:01', username: 'admin', password: 'admin123', brand: 'Hikvision', model: 'DS-2CD2143G2', status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'camera',  name: 'Camera ອາຄານ A',          location: 'ອາຄານ A ຊັ້ນ 2', ipAddress: '192.168.1.102', macAddress: 'AA:BB:CC:01:01:02', username: 'admin', password: 'admin123', brand: 'Hikvision', model: 'DS-2CD2143G2', status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'printer', name: 'Printer ຫ້ອງ Admin',      location: 'ຫ້ອງ Admin',      ipAddress: '192.168.1.201', username: 'admin',   password: '',         brand: 'HP',        model: 'LaserJet M404n', url: 'http://192.168.1.201', status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'printer', name: 'Printer ຫ້ອງ ACA',        location: 'ພະແນກ ວິຊາການ',  ipAddress: '192.168.1.202', username: 'admin',   password: '',         brand: 'Epson',     model: 'L3250',          url: 'http://192.168.1.202', status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'server',  name: 'File Server',              location: 'ຫ້ອງ Server',    ipAddress: '192.168.1.10',  username: 'administrator', password: 'Srv@2024!', brand: 'Dell', model: 'PowerEdge T40',  url: 'http://192.168.1.10', status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'account', name: 'Google Workspace Admin',  url: 'https://admin.google.com', username: 'admin@lptvt.edu.la', password: 'Gws@2024!', status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now },
+    { category: 'account', name: 'Facebook Page ວິທະຍາໄລ',  url: 'https://facebook.com', username: 'page@lptvt.edu.la',  password: 'Fb@2024!',  status: 'ໃຊ້ງານ', recordedBy: adminId, updatedAt: now }
   ]);
   Logger.log(JSON.stringify(result));
 }

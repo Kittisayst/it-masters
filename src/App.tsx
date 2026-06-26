@@ -18,6 +18,7 @@ import UsersSettings from './pages/Settings/Users';
 import CategoriesSettings from './pages/Settings/Categories';
 import DepartmentsSettings from './pages/Settings/Departments';
 import EmployeesSettings from './pages/Settings/Employees';
+import ItInfoPage from './pages/ItInfo';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 1000 * 60 * 5 } },
@@ -54,6 +55,7 @@ export default function App() {
                 <Route path="reports"              element={<ReportsPage />} />
                 <Route path="qr-print"            element={<QrPrintPage />} />
                 <Route path="qr-scan"             element={<QrScanPage />} />
+                <Route path="it-info"            element={<ItInfoPage />} />
                 <Route path="settings/users"       element={<UsersSettings />} />
                 <Route path="settings/categories"  element={<CategoriesSettings />} />
                 <Route path="settings/departments" element={<DepartmentsSettings />} />

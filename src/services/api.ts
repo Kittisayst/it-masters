@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, Category, Department, Employee, Equipment, User, WorkRecord, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats } from '../types';
+import type { ApiResponse, Category, Department, Employee, Equipment, ItInfo, User, WorkRecord, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats } from '../types';
 
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string;
 
@@ -95,6 +95,15 @@ export const disbursementApi = {
   insert: (header: Record<string, unknown>, items: Record<string, unknown>[]) =>
     callApi('disbursement', 'insert', { header, items }),
   delete: (id: string) => callApi('disbursement', 'delete', { id }),
+};
+
+// IT Info Registry
+export const itInfoApi = {
+  findAll: () => callApi<ItInfo[]>('itInfo', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<ItInfo[]>('itInfo', 'find', params),
+  insert: (data: Record<string, unknown>) => callApi<ItInfo>('itInfo', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<ItInfo>('itInfo', 'update', { id, data }),
+  delete: (id: string) => callApi('itInfo', 'delete', { id }),
 };
 
 // Dashboard

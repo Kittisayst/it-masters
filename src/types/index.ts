@@ -125,6 +125,24 @@ export interface DashboardStats {
   };
 }
 
+export interface ItInfo {
+  id: string;
+  category: 'wifi' | 'camera' | 'printer' | 'account' | 'server' | 'other';
+  name: string;
+  location?: string;
+  ipAddress?: string;
+  macAddress?: string;
+  username?: string;
+  password?: string;
+  brand?: string;
+  model?: string;
+  url?: string;
+  notes?: string;
+  status: 'ໃຊ້ງານ' | 'ບໍ່ໃຊ້ງານ';
+  recordedBy: string;
+  updatedAt?: string;
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
