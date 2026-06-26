@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Typography, theme, Grid, Drawer } from 'antd';
+import { Layout, Menu, Avatar, Typography, theme, Grid, Drawer, Popover, Switch, Divider, Button } from 'antd';
 import { useNavigate, useLocation, Outlet } from 'react-router';
 import {
   DashboardOutlined,
@@ -17,8 +17,10 @@ import {
   QrcodeOutlined,
   ScanOutlined,
   KeyOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useThemeStore } from '../../store/useThemeStore';
 import BottomNav from './BottomNav';
 
 const { Sider, Header, Content } = Layout;
@@ -48,9 +50,94 @@ const navItems = [
   },
 ];
 
+function UserPopover({ onClose }: { onClose: () => void }) {
+  const { user, logout } = useAuthStore();
+  const { isDark, setDark } = useThemeStore();
+  const navigate = useNavigate();
+  const { token } = theme.useToken();
+
+  const handleLogout = () => {
+    onClose();
+    logout();
+    navigate('/login');
+  };
+
+  const handleProfile = () => {
+    onClose();
+    navigate('/profile');
+  };
+
+  return (
+    <div style={{ width: 220 }}>
+      {/* user header */}
+      <div style={{ padding: '12px 16px 10px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Avatar size={40} icon={<UserOutlined />} style={{ background: token.colorPrimary, flexShrink: 0 }} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {user?.fullName}
+          </div>
+          <div style={{ color: token.colorTextSecondary, fontSize: 12 }}>{user?.username}</div>
+          {user?.position && (
+            <div style={{ color: token.colorTextTertiary, fontSize: 11 }}>{user.position}</div>
+          )}
+        </div>
+      </div>
+
+      <Divider style={{ margin: '4px 0' }} />
+
+      {/* profile */}
+      <div
+        onClick={handleProfile}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 16px', cursor: 'pointer', borderRadius: 6, margin: '2px 4px',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = token.colorFillSecondary)}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      >
+        <UserOutlined style={{ color: token.colorTextSecondary }} />
+        <Text style={{ fontSize: 13 }}>ໂປຣໄຟລ໌</Text>
+      </div>
+
+      {/* theme toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', margin: '2px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <BulbOutlined style={{ color: token.colorTextSecondary }} />
+          <Text style={{ fontSize: 13 }}>{isDark ? 'ໂໝດມືດ' : 'ໂໝດສະຫວ່າງ'}</Text>
+        </div>
+        <Switch
+          size="small"
+          checked={isDark}
+          onChange={setDark}
+          checkedChildren="🌙"
+          unCheckedChildren="☀️"
+        />
+      </div>
+
+      <Divider style={{ margin: '4px 0' }} />
+
+      {/* logout */}
+      <div style={{ padding: '4px 8px 8px' }}>
+        <Button
+          type="text"
+          danger
+          icon={<LogoutOutlined />}
+          block
+          style={{ textAlign: 'left', justifyContent: 'flex-start' }}
+          onClick={handleLogout}
+        >
+          ອອກຈາກລະບົບ
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const swipeStartX = useRef<number | null>(null);
 
   const onSwipeTouchStart = (e: React.TouchEvent) => {
@@ -64,19 +151,10 @@ export default function AppLayout() {
   };
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const { token } = theme.useToken();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
-
-  const userMenu = {
-    items: [
-      { key: 'logout', icon: <LogoutOutlined />, label: 'ອອກຈາກລະບົບ', danger: true },
-    ],
-    onClick: ({ key }: { key: string }) => {
-      if (key === 'logout') { logout(); navigate('/login'); }
-    },
-  };
 
   const handleMenuClick = ({ key }: { key: string }) => {
     if (!key.startsWith('settings')) {
@@ -120,19 +198,14 @@ export default function AppLayout() {
         </Sider>
       )}
 
-      {/* Swipe-to-open handle — invisible strip on left edge, mobile only */}
+      {/* Swipe-to-open handle */}
       {isMobile && !drawerOpen && (
         <div
           onTouchStart={onSwipeTouchStart}
           onTouchEnd={onSwipeTouchEnd}
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: 24,
-            height: '100dvh',
-            zIndex: 200,
-            touchAction: 'pan-y',
+            position: 'fixed', top: 0, left: 0,
+            width: 24, height: '100dvh', zIndex: 200, touchAction: 'pan-y',
           }}
         />
       )}
@@ -175,12 +248,23 @@ export default function AppLayout() {
             </span>
           )}
 
-          <Dropdown menu={userMenu} placement="bottomRight">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <Popover
+            open={popoverOpen}
+            onOpenChange={setPopoverOpen}
+            content={<UserPopover onClose={() => setPopoverOpen(false)} />}
+            trigger="click"
+            placement="bottomRight"
+            arrow={false}
+            styles={{ content: { padding: 0 } }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 8px', borderRadius: 8, transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = token.colorFillSecondary)}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
               <Avatar size="small" icon={<UserOutlined />} style={{ background: token.colorPrimary }} />
-              {!isMobile && <Text>{user?.fullName}</Text>}
+              {!isMobile && <Text style={{ fontSize: 13 }}>{user?.fullName}</Text>}
             </div>
-          </Dropdown>
+          </Popover>
         </Header>
 
         <Content style={{

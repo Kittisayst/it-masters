@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider, App as AntApp } from 'antd';
+import { ConfigProvider, App as AntApp, theme as antTheme } from 'antd';
 import { Toaster } from 'sonner';
 
 import { useAuthStore } from './store/useAuthStore';
+import { useThemeStore } from './store/useThemeStore';
 import AppLayout from './components/Layout/AppLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -19,6 +20,10 @@ import CategoriesSettings from './pages/Settings/Categories';
 import DepartmentsSettings from './pages/Settings/Departments';
 import EmployeesSettings from './pages/Settings/Employees';
 import ItInfoPage from './pages/ItInfo';
+import ProfilePage from './pages/Profile';
+import BorrowingPrintPage from './pages/Borrowing/BorrowingPrintPage';
+import BorrowingReturnPage from './pages/Borrowing/BorrowingReturnPage';
+import DisbursementPrintPage from './pages/Disbursement/DisbursementPrintPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 1000 * 60 * 5 } },
@@ -31,8 +36,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const isDark = useThemeStore((s) => s.isDark);
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: '#5c6bc0', borderRadius: 8, fontFamily: "'Noto Sans Lao', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" } }}>
+    <ConfigProvider theme={{
+      algorithm: isDark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
+      token: { colorPrimary: '#5c6bc0', borderRadius: 8, fontFamily: "'Noto Sans Lao', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+    }}>
       <AntApp>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -60,7 +69,20 @@ export default function App() {
                 <Route path="settings/categories"  element={<CategoriesSettings />} />
                 <Route path="settings/departments" element={<DepartmentsSettings />} />
                 <Route path="settings/employees"   element={<EmployeesSettings />} />
+                <Route path="profile"              element={<ProfilePage />} />
               </Route>
+              <Route
+                path="/borrowing/:id/print"
+                element={<ProtectedRoute><BorrowingPrintPage /></ProtectedRoute>}
+              />
+              <Route
+                path="/borrowing/return/:id"
+                element={<ProtectedRoute><BorrowingReturnPage /></ProtectedRoute>}
+              />
+              <Route
+                path="/disbursement/:id/print"
+                element={<ProtectedRoute><DisbursementPrintPage /></ProtectedRoute>}
+              />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </BrowserRouter>

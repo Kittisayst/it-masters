@@ -1,30 +1,23 @@
-import { useState } from 'react';
-import { Button, Card, Modal, Space, Popconfirm } from 'antd';
+import { Button, Card, Space, Popconfirm } from 'antd';
 import { PlusOutlined, PrinterOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
-import { disbursementApi, equipmentApi } from '../../services/api';
-import { useEmployees, useUsers } from '../../hooks/useReferenceData';
+import { disbursementApi } from '../../services/api';
+import { useEmployees } from '../../hooks/useReferenceData';
+import { useState } from 'react';
 import DisbursementForm from './DisbursementForm';
-import DisbursementSlip from './DisbursementSlip';
 import SkeletonTable from '../../components/common/SkeletonTable';
 import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
-import type { DisbursementDetail, DisbursementHeader, Equipment } from '../../types';
+import type { DisbursementHeader } from '../../types';
 
 export default function DisbursementPage() {
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
-  const [slipDetail, setSlipDetail] = useState<DisbursementDetail | null>(null);
 
   const { data: employees = [] } = useEmployees();
-  const { data: users = [] } = useUsers();
-  const { data: allEquipment = [] } = useQuery({
-    queryKey: ['equipment', 'all-disb'],
-    queryFn: async () => (await equipmentApi.findAll()).data as Equipment[] ?? [],
-  });
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['disbursement'],
@@ -39,9 +32,8 @@ export default function DisbursementPage() {
 
   const empMap = Object.fromEntries(employees.map((e) => [e.id, e.fullName]));
 
-  const openSlip = async (id: string) => {
-    const res = await disbursementApi.findById(id);
-    if (res.success) setSlipDetail(res.data as DisbursementDetail);
+  const openPrint = (id: string) => {
+    window.open(`${import.meta.env.BASE_URL}disbursement/${id}/print`, '_blank');
   };
 
   const columns = [
@@ -53,7 +45,7 @@ export default function DisbursementPage() {
       title: '', width: 100,
       render: (_: unknown, row: DisbursementHeader) => (
         <Space>
-          <Button size="small" icon={<PrinterOutlined />} onClick={() => openSlip(row.id)} />
+          <Button size="small" icon={<PrinterOutlined />} onClick={() => openPrint(row.id)} />
           <Popconfirm title="ຢືນຢັນລົບ?" onConfirm={() => deleteMutation.mutate(row.id)}>
             <Button size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
@@ -63,7 +55,7 @@ export default function DisbursementPage() {
   ];
 
   const handleExport = () => {
-    const rows = records.map((r) => ({
+    const rows = (records as DisbursementHeader[]).map((r) => ({
       ລະຫັດ: r.disbursementCode,
       ຜູ້ຮັບ: empMap[r.recipientId] ?? r.recipientId,
       ວັນທີເບີກ: r.disbursementDate,
@@ -81,14 +73,22 @@ export default function DisbursementPage() {
       />
 
       <Card>
-        {isLoading ? <SkeletonTable rows={6} cols={4} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} />}
+        {isLoading
+          ? <SkeletonTable rows={6} cols={4} />
+          : <ResponsiveTable columns={columns} dataSource={records as DisbursementHeader[]} rowKey="id" scroll={{ x: 'max-content' }} />
+        }
       </Card>
 
-      <DisbursementForm open={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); qc.invalidateQueries({ queryKey: ['disbursement'] }); qc.invalidateQueries({ queryKey: ['equipment'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />
-
-      <Modal open={!!slipDetail} onCancel={() => setSlipDetail(null)} footer={null} width={700} title="ໃບເບີກຈ່າຍ">
-        {slipDetail && <DisbursementSlip detail={slipDetail} employees={employees} users={users} equipment={allEquipment} />}
-      </Modal>
+      <DisbursementForm
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSuccess={() => {
+          setFormOpen(false);
+          qc.invalidateQueries({ queryKey: ['disbursement'] });
+          qc.invalidateQueries({ queryKey: ['equipment'] });
+          qc.invalidateQueries({ queryKey: ['dashboard'] });
+        }}
+      />
     </div>
   );
 }

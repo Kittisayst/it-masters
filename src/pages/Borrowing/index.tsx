@@ -1,32 +1,28 @@
 import { useState } from 'react';
-import { Button, Card, Modal, Select, Space, Popconfirm } from 'antd';
+import { Button, Card, Select, Space, Popconfirm } from 'antd';
 import { PlusOutlined, PrinterOutlined, CheckOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
+
 import dayjs from 'dayjs';
-import { borrowingApi, equipmentApi } from '../../services/api';
-import { useEmployees, useUsers } from '../../hooks/useReferenceData';
+import { borrowingApi } from '../../services/api';
+import { useEmployees } from '../../hooks/useReferenceData';
 import StatusBadge from '../../components/common/StatusBadge';
 import BorrowingForm from './BorrowingForm';
-import BorrowingSlip from './BorrowingSlip';
 import SkeletonTable from '../../components/common/SkeletonTable';
 import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
-import type { BorrowingDetail, BorrowingHeader, Equipment } from '../../types';
+import type { BorrowingHeader } from '../../types';
 
 export default function BorrowingPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
-  const [slipDetail, setSlipDetail] = useState<BorrowingDetail | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
 
   const { data: employees = [] } = useEmployees();
-  const { data: users = [] } = useUsers();
-  const { data: allEquipment = [] } = useQuery({
-    queryKey: ['equipment', 'all'],
-    queryFn: async () => (await equipmentApi.findAll()).data as Equipment[] ?? [],
-  });
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['borrowing', statusFilter],
@@ -38,12 +34,6 @@ export default function BorrowingPage() {
     },
   });
 
-  const returnMutation = useMutation({
-    mutationFn: (id: string) => borrowingApi.return(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['borrowing'] }); qc.invalidateQueries({ queryKey: ['equipment'] }); toast.success('ບັນທຶກການຄືນສຳເລັດ'); },
-    onError: () => toast.error('ເກີດຂໍ້ຜິດພາດ'),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => borrowingApi.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['borrowing'] }); qc.invalidateQueries({ queryKey: ['equipment'] }); toast.success('ລົບສຳເລັດ'); },
@@ -52,9 +42,8 @@ export default function BorrowingPage() {
 
   const empMap = Object.fromEntries(employees.map((e) => [e.id, e.fullName]));
 
-  const openSlip = async (id: string) => {
-    const res = await borrowingApi.findById(id);
-    if (res.success) setSlipDetail(res.data as BorrowingDetail);
+  const openPrint = (id: string) => {
+    window.open(`${import.meta.env.BASE_URL}borrowing/${id}/print`, '_blank');
   };
 
   const columns = [
@@ -68,11 +57,9 @@ export default function BorrowingPage() {
       title: '', width: 130,
       render: (_: unknown, row: BorrowingHeader) => (
         <Space>
-          <Button size="small" icon={<PrinterOutlined />} onClick={() => openSlip(row.id)} />
+          <Button size="small" icon={<PrinterOutlined />} onClick={() => openPrint(row.id)} />
           {row.status === 'ກຳລັງຢືມ' || row.status === 'ເກີນກຳນົດ' ? (
-            <Popconfirm title="ຢືນຢັນການຄືນ?" onConfirm={() => returnMutation.mutate(row.id)}>
-              <Button size="small" type="primary" icon={<CheckOutlined />}>ຄືນ</Button>
-            </Popconfirm>
+            <Button size="small" type="primary" icon={<CheckOutlined />} onClick={() => navigate(`/borrowing/return/${row.id}`)}>ຄືນ</Button>
           ) : null}
           <Popconfirm title="ຢືນຢັນລົບ?" onConfirm={() => deleteMutation.mutate(row.id)}>
             <Button size="small" danger icon={<DeleteOutlined />} />
@@ -113,27 +100,22 @@ export default function BorrowingPage() {
       </Card>
 
       <Card>
-        {isLoading ? <SkeletonTable rows={6} cols={5} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['borrowCode', 'borrowDate', 'status']} />}
+        {isLoading
+          ? <SkeletonTable rows={6} cols={5} />
+          : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['borrowCode', 'borrowDate', 'status']} />
+        }
       </Card>
 
-      <BorrowingForm open={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); qc.invalidateQueries({ queryKey: ['borrowing'] }); qc.invalidateQueries({ queryKey: ['equipment'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />
-
-      <Modal
-        open={!!slipDetail}
-        onCancel={() => setSlipDetail(null)}
-        footer={null}
-        width={700}
-        title="ໃບຢືມອຸປະກອນ"
-      >
-        {slipDetail && (
-          <BorrowingSlip
-            detail={slipDetail}
-            employees={employees}
-            users={users}
-            equipment={allEquipment}
-          />
-        )}
-      </Modal>
+      <BorrowingForm
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSuccess={() => {
+          setFormOpen(false);
+          qc.invalidateQueries({ queryKey: ['borrowing'] });
+          qc.invalidateQueries({ queryKey: ['equipment'] });
+          qc.invalidateQueries({ queryKey: ['dashboard'] });
+        }}
+      />
     </div>
   );
 }

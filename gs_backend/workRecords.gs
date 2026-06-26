@@ -6,7 +6,7 @@ function handleWorkRecords(method, params) {
   var table = getWorkRecordsTable();
 
   if (method === 'findAll') {
-    return table.orderBy('date', 'DESC').get();
+    return table.orderBy('createdAt', 'DESC').get();
   }
 
   if (method === 'find') {
@@ -16,7 +16,7 @@ function handleWorkRecords(method, params) {
     if (params.status)       q = q.where('status', '=', params.status);
     if (params.dateFrom)     q = q.where('date', '>=', params.dateFrom);
     if (params.dateTo)       q = q.where('date', '<=', params.dateTo);
-    return q.orderBy('date', 'DESC').get();
+    return q.orderBy('createdAt', 'DESC').get();
   }
 
   if (method === 'findById') return table.findById(params.id);

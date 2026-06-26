@@ -149,20 +149,25 @@ type ScanState =
   | { phase: 'notfound'; id: string };
 
 export default function QrScanPage() {
+  const navigate = useNavigate();
   const [state, setState] = useState<ScanState>({ phase: 'scanning' });
 
-  const handleScan = async (id: string) => {
+  const handleScan = async (raw: string) => {
+    if (raw.startsWith('borrow:')) {
+      navigate(`/borrowing/return/${raw.slice('borrow:'.length)}`);
+      return;
+    }
     setState({ phase: 'loading' });
     try {
-      const res = await equipmentApi.find({ id });
+      const res = await equipmentApi.find({ id: raw });
       const list = (res.data ?? []) as Equipment[];
       if (list.length > 0) {
         setState({ phase: 'found', equipment: list[0] });
       } else {
-        setState({ phase: 'notfound', id });
+        setState({ phase: 'notfound', id: raw });
       }
     } catch {
-      setState({ phase: 'notfound', id });
+      setState({ phase: 'notfound', id: raw });
     }
   };
 
