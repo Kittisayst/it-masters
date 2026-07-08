@@ -25,7 +25,7 @@ function handleWorkRecords(method, params) {
   if (method === 'delete')   return table.delete(params.id);
 
   if (method === 'todayCount') {
-    var today = new Date().toISOString().split('T')[0];
+    var today = Utilities.formatDate(new Date(), 'Asia/Vientiane', 'yyyy-MM-dd');
     var result = table.where('date', '=', today).get();
     return { success: true, data: { count: result.success ? result.data.length : 0 } };
   }

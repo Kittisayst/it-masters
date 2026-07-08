@@ -4,7 +4,7 @@
 
 function handleDashboard(method, params) {
   if (method === 'stats') {
-    var today = new Date().toISOString().split('T')[0];
+    var today = Utilities.formatDate(new Date(), 'Asia/Vientiane', 'yyyy-MM-dd');
 
     var workToday = getWorkRecordsTable().where('date', '=', today).get();
     var equipment = getEquipmentTable().findAll();
