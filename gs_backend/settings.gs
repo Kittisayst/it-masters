@@ -61,3 +61,15 @@ function handleEmployees(method, params) {
 
   return { success: false, error: 'Unknown employees method: ' + method };
 }
+
+function handleWorkTypes(method, params) {
+  var table = getWorkTypesTable();
+
+  if (method === 'findAll') return table.findAll();
+  if (method === 'findById') return table.findById(params.id);
+  if (method === 'insert')   return table.insert(params);
+  if (method === 'update')   return table.update(params.id, params.data);
+  if (method === 'delete')   return table.delete(params.id);
+
+  return { success: false, error: 'Unknown workTypes method: ' + method };
+}

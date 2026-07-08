@@ -20,6 +20,7 @@ import CategoriesSettings from './pages/Settings/Categories';
 import DepartmentsSettings from './pages/Settings/Departments';
 import EmployeesSettings from './pages/Settings/Employees';
 import ItInfoPage from './pages/ItInfo';
+import WorkTypesSettings from './pages/Settings/WorkTypes';
 import ProfilePage from './pages/Profile';
 import BorrowingPrintPage from './pages/Borrowing/BorrowingPrintPage';
 import BorrowingReturnPage from './pages/Borrowing/BorrowingReturnPage';
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="settings/categories"  element={<CategoriesSettings />} />
                 <Route path="settings/departments" element={<DepartmentsSettings />} />
                 <Route path="settings/employees"   element={<EmployeesSettings />} />
+                <Route path="settings/work-types"  element={<WorkTypesSettings />} />
                 <Route path="profile"              element={<ProfilePage />} />
               </Route>
               <Route

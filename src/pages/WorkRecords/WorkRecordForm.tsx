@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { workRecordsApi } from '../../services/api';
-import { useDepartments, useUsers } from '../../hooks/useReferenceData';
+import { useDepartments, useUsers, useWorkTypes } from '../../hooks/useReferenceData';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { WorkRecord } from '../../types';
 
@@ -15,13 +15,12 @@ interface Props {
   onSuccess: () => void;
 }
 
-const WORK_TYPES = ['ສ້ອມແປງ', 'ຕິດຕັ້ງ', 'ສະໜັບສະໜູນ', 'ອື່ນໆ'];
-
 export default function WorkRecordForm({ open, record, onClose, onSuccess }: Props) {
   const [form] = Form.useForm();
   const currentUser = useAuthStore((s) => s.user);
   const { data: departments = [] } = useDepartments();
   const { data: users = [] } = useUsers();
+  const { data: workTypes = [] } = useWorkTypes();
 
   useEffect(() => {
     if (open) {
@@ -73,7 +72,7 @@ export default function WorkRecordForm({ open, record, onClose, onSuccess }: Pro
           <Input placeholder="ຕົວຢ່າງ: ຫ້ອງ 301" />
         </Form.Item>
         <Form.Item name="workType" label="ປະເພດວຽກ" rules={[{ required: true }]}>
-          <Select options={WORK_TYPES.map((t) => ({ value: t, label: t }))} />
+          <Select options={workTypes.map((t) => ({ value: t.name, label: t.name }))} />
         </Form.Item>
         <Form.Item name="description" label="ລາຍລະອຽດ">
           <Input.TextArea rows={3} />

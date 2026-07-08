@@ -65,7 +65,7 @@ export default function BorrowingReturnPage() {
   const returnItemMutation = useMutation({
     mutationFn: (equipmentId: string) =>
       equipmentApi.update(equipmentId, { status: 'ປົກກະຕິ' }),
-    onSuccess: (res, equipmentId) => {
+    onSuccess: (res) => {
       if (res.success) {
         qc.invalidateQueries({ queryKey: ['equipment', 'all'] });
         qc.invalidateQueries({ queryKey: ['equipment'] });

@@ -29,13 +29,21 @@ export interface Employee {
   phone: string;
 }
 
+export interface WorkType {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface WorkRecord {
   id: string;
   date: string;
   staffId: string;
   departmentId: string;
   location: string;
-  workType: 'ສ້ອມແປງ' | 'ຕິດຕັ້ງ' | 'ສະໜັບສະໜູນ' | 'ອື່ນໆ';
+  workType: string;
   description: string;
   status: 'ສຳເລັດ' | 'ຍັງຄ້າງ';
   createdAt?: string;

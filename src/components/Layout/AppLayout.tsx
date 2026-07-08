@@ -46,6 +46,7 @@ const navItems = [
       { key: '/settings/categories',  label: 'ປະເພດອຸປະກອນ' },
       { key: '/settings/departments', label: 'ຫ້ອງການ/ພະແນກ' },
       { key: '/settings/employees',   label: 'ພະນັກງານ' },
+      { key: '/settings/work-types',  label: 'ປະເພດວຽກ' },
     ],
   },
 ];

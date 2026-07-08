@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, Category, Department, Employee, Equipment, ItInfo, User, WorkRecord, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats } from '../types';
+import type { ApiResponse, Category, Department, Employee, Equipment, ItInfo, User, WorkRecord, WorkType, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats } from '../types';
 
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string;
 
@@ -53,6 +53,13 @@ export const employeesApi = {
   insert: (data: Record<string, unknown>) => callApi<Employee>('employees', 'insert', data),
   update: (id: string, data: Record<string, unknown>) => callApi<Employee>('employees', 'update', { id, data }),
   delete: (id: string) => callApi('employees', 'delete', { id }),
+};
+
+export const workTypesApi = {
+  findAll: () => callApi<WorkType[]>('workTypes', 'findAll'),
+  insert: (data: Record<string, unknown>) => callApi<WorkType>('workTypes', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<WorkType>('workTypes', 'update', { id, data }),
+  delete: (id: string) => callApi('workTypes', 'delete', { id }),
 };
 
 // WorkRecords

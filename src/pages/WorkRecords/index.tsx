@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Card, DatePicker, Select, Space, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ export default function WorkRecordsPage() {
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<WorkRecord | null>(null);
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string>>({ status: 'ຍັງຄ້າງ' });
 
   const { data: departments = [] } = useDepartments();
   const { data: users = [] } = useUsers();
@@ -39,6 +39,12 @@ export default function WorkRecordsPage() {
     onError: () => toast.error('ລົບບໍ່ສຳເລັດ'),
   });
 
+  const completeMutation = useMutation({
+    mutationFn: (id: string) => workRecordsApi.update(id, { status: 'ສຳເລັດ' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workRecords'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); toast.success('ປ່ຽນສະຖານະສຳເລັດ'); },
+    onError: () => toast.error('ເກີດຂໍ້ຜິດພາດ'),
+  });
+
   const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.name]));
   const userMap = Object.fromEntries(users.map((u) => [u.id, u.fullName]));
 
@@ -51,9 +57,19 @@ export default function WorkRecordsPage() {
     { title: 'ລາຍລະອຽດ', dataIndex: 'description', ellipsis: true },
     { title: 'ສະຖານະ', dataIndex: 'status', render: (v: string) => <StatusBadge status={v} /> },
     {
-      title: '', width: 80,
+      title: '', width: 110,
       render: (_: unknown, row: WorkRecord) => (
         <Space>
+          {row.status === 'ຍັງຄ້າງ' && (
+            <Popconfirm title="ຢືນຢັນວ່າວຽກສຳເລັດ?" onConfirm={() => completeMutation.mutate(row.id)} okText="ສຳເລັດ" cancelText="ຍົກເລີກ">
+              <Button
+                size="small"
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                loading={completeMutation.isPending && completeMutation.variables === row.id}
+              />
+            </Popconfirm>
+          )}
           <Button size="small" icon={<EditOutlined />} onClick={() => { setEditing(row); setFormOpen(true); }} />
           <Popconfirm title="ຢືນຢັນລົບ?" onConfirm={() => deleteMutation.mutate(row.id)}>
             <Button size="small" danger icon={<DeleteOutlined />} />
@@ -129,6 +145,7 @@ export default function WorkRecordsPage() {
               <Select
                 placeholder="ສະຖານະ"
                 allowClear
+                defaultValue="ຍັງຄ້າງ"
                 style={{ width: '100%' }}
                 options={[{ value: 'ສຳເລັດ', label: 'ສຳເລັດ' }, { value: 'ຍັງຄ້າງ', label: 'ຍັງຄ້າງ' }]}
                 onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.status = v; else delete n.status; return n; })}
@@ -138,8 +155,11 @@ export default function WorkRecordsPage() {
         </div>
       </Card>
 
+      
+      
+
       <Card>
-        {isLoading ? <SkeletonTable rows={6} cols={6} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['date', 'workType', 'status']} />}
+        {isLoading ? <SkeletonTable rows={6} cols={6} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['date', 'workType', 'description', 'status']} />}
       </Card>
 
       <WorkRecordForm

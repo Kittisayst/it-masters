@@ -53,7 +53,7 @@ function getWorkRecordsTable() {
     staffId:      { type: 'string', required: true },
     departmentId: { type: 'string' },
     location:     { type: 'string' },
-    workType:     { type: 'string', required: true, enum: ['ສ້ອມແປງ', 'ຕິດຕັ້ງ', 'ສະໜັບສະໜູນ', 'ອື່ນໆ'] },
+    workType:     { type: 'string', required: true },
     description:  { type: 'string' },
     status:       { type: 'string', required: true, enum: ['ສຳເລັດ', 'ຍັງຄ້າງ'], default: 'ຍັງຄ້າງ' },
     createdAt:    { type: 'string' },
@@ -126,6 +126,16 @@ function getDisbursementItemsTable() {
     disbursementId:  { type: 'string', required: true },
     equipmentId:     { type: 'string', required: true },
     note:            { type: 'string' }
+  });
+}
+
+function getWorkTypesTable() {
+  return getDb().table('WorkTypes').schema({
+    id:          { type: 'string' },
+    name:        { type: 'string', required: true },
+    description: { type: 'string' },
+    createdAt:   { type: 'string' },
+    updatedAt:   { type: 'string' }
   });
 }
 
@@ -212,6 +222,11 @@ function runMigrations() {
         db.createTable('ItInfo', ['id','category','name','location','ipAddress','macAddress','username','password','brand','model','url','notes','status','recordedBy','updatedAt']);
       },
       down: function(db) { db.dropTable('ItInfo'); }
+    },
+    {
+      version: '010', name: 'create_worktypes',
+      up: function(db) { db.createTable('WorkTypes', ['id','name','description','createdAt','updatedAt']); },
+      down: function(db) { db.dropTable('WorkTypes'); }
     }
   ];
   var result = SheetORM.migrate(SPREADSHEET_ID, migrations);
@@ -305,6 +320,33 @@ function runSeedEquipment() {
     { code: 'IT-004', name: 'Cisco Switch 24-port',       type: 'Network',        categoryId: catMap['Network'],       serialNumber: 'CS-2023-001', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-09-05', fundSource: 'ໂຄງການ JICA',   price: 9000000,  recordedBy: adminId },
     { code: 'IT-005', name: 'Dell Desktop OptiPlex 3090', type: 'ຄອມ',            categoryId: catMap['ຄອມພິວເຕີ'],    serialNumber: 'DK-2022-001', location: 'ຫ້ອງ Lab 1',  status: 'ປົກກະຕິ', receivedDate: '2022-06-20', fundSource: 'ງົບປະມານ 2022',  price: 7000000,  recordedBy: adminId },
     { code: 'IT-006', name: 'APC UPS 1000VA',             type: 'ອຸປະກອນໄຟຟ້າ', categoryId: catMap['ອຸປະກອນໄຟຟ້າ'], serialNumber: 'APC-2023-01', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-03-15', fundSource: 'ງົບປະມານ 2023',  price: 2500000,  recordedBy: adminId }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Migration 010 only — run if sheet WorkTypes missing
+// ====================================================
+function runMigration010_WorkTypes() {
+  var result = SheetORM.migrate(SPREADSHEET_ID, [
+    {
+      version: '010', name: 'create_worktypes',
+      up: function(db) { db.createTable('WorkTypes', ['id','name','description','createdAt','updatedAt']); },
+      down: function(db) { db.dropTable('WorkTypes'); }
+    }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Seed workTypes — default types
+// ====================================================
+function runSeedWorkTypes() {
+  var result = getWorkTypesTable().insertMany([
+    { name: 'ສ້ອມແປງ',     description: 'ສ້ອມແປງ ແລະ ແກ້ໄຂ' },
+    { name: 'ຕິດຕັ້ງ',     description: 'ຕິດຕັ້ງໂປຣແກຣມ ຫຼື ອຸປະກອນ' },
+    { name: 'ສະໜັບສະໜູນ', description: 'ຊ່ວຍເຫຼືອ ແລະ ແນະນຳ' },
+    { name: 'ອື່ນໆ',       description: 'ວຽກງານອື່ນໆ' }
   ]);
   Logger.log(JSON.stringify(result));
 }
