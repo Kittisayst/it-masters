@@ -10,7 +10,9 @@ function handleDashboard(method, params) {
     var workTodayCount = 0;
     if (allWork.success) {
       allWork.data.forEach(function(r) {
-        if (r.date && String(r.date).slice(0, 10) === today && r.status !== 'ຍົກເລີກ') workTodayCount++;
+        if (r.date && r.status !== 'ຍົກເລີກ') {
+          try { if (Utilities.formatDate(new Date(r.date), 'Asia/Vientiane', 'yyyy-MM-dd') === today) workTodayCount++; } catch(e) {}
+        }
       });
     }
     var equipment = getEquipmentTable().findAll();

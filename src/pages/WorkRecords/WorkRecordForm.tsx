@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { DatePicker, Form, Input, Modal, Select } from 'antd';
+import { AutoComplete, DatePicker, Form, Input, Modal, Select } from 'antd';
 import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -80,7 +80,10 @@ export default function WorkRecordForm({ open, record, onClose, onSuccess }: Pro
           <Input placeholder="ຕົວຢ່າງ: ຫ້ອງ 301" />
         </Form.Item>
         <Form.Item name="workType" label="ປະເພດວຽກ" rules={[{ required: true }]}>
-          <Select options={workTypes.map((t) => ({ value: t.name, label: t.name }))} />
+          <AutoComplete
+            options={workTypes.map((t) => ({ value: t.name }))}
+placeholder="ເລືອກ ຫຼື ພິມປະເພດວຽກ"
+          />
         </Form.Item>
         <Form.Item name="description" label="ລາຍລະອຽດ">
           <Input.TextArea rows={3} />
