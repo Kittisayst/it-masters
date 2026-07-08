@@ -2,8 +2,11 @@ import { Tag } from 'antd';
 
 const statusColors: Record<string, string> = {
   // WorkRecord
-  'ສຳເລັດ': 'success',
-  'ຍັງຄ້າງ': 'warning',
+  'ຍັງຄ້າງ':       'warning',
+  'ກຳລັງດຳເນີນ': 'processing',
+  'ລໍຖ້າ':         'orange',
+  'ສຳເລັດ':        'success',
+  'ຍົກເລີກ':       'default',
   // Equipment
   'ປົກກະຕິ': 'success',
   'ສ້ອມແປງ': 'orange',

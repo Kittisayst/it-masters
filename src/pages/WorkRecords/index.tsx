@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, Card, DatePicker, Select, Space, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Button, Card, DatePicker, Select, Space, Popconfirm, Empty, Grid } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -14,11 +14,16 @@ import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { exportToExcel } from '../../utils/exportExcel';
 import type { WorkRecord } from '../../types';
 
+const WORK_STATUSES = ['ຍັງຄ້າງ', 'ກຳລັງດຳເນີນ', 'ລໍຖ້າ', 'ສຳເລັດ', 'ຍົກເລີກ'];
+const ACTIVE_STATUSES = 'ຍັງຄ້າງ,ກຳລັງດຳເນີນ,ລໍຖ້າ';
+
 export default function WorkRecordsPage() {
   const qc = useQueryClient();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<WorkRecord | null>(null);
-  const [filters, setFilters] = useState<Record<string, string>>({ status: 'ຍັງຄ້າງ' });
+  const [filters, setFilters] = useState<Record<string, string>>({ statuses: ACTIVE_STATUSES });
 
   const { data: departments = [] } = useDepartments();
   const { data: users = [] } = useUsers();
@@ -39,9 +44,14 @@ export default function WorkRecordsPage() {
     onError: () => toast.error('ລົບບໍ່ສຳເລັດ'),
   });
 
-  const completeMutation = useMutation({
-    mutationFn: (id: string) => workRecordsApi.update(id, { status: 'ສຳເລັດ' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workRecords'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); toast.success('ປ່ຽນສະຖານະສຳເລັດ'); },
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      workRecordsApi.update(id, { status }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workRecords'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      toast.success('ປ່ຽນສະຖານະສຳເລັດ');
+    },
     onError: () => toast.error('ເກີດຂໍ້ຜິດພາດ'),
   });
 
@@ -50,26 +60,30 @@ export default function WorkRecordsPage() {
 
   const columns = [
     { title: 'ວັນທີ', dataIndex: 'date', width: 110, render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
-    { title: 'ຜູ້ປະຕິບັດ', dataIndex: 'staffId', render: (v: string) => userMap[v] ?? v },
+    { title: 'ຜູ້ປະຕິບັດ', dataIndex: 'staffIds', render: (v: string) => (v || '').split(',').map((id) => userMap[id] ?? id).join(', ') },
     { title: 'ຫ້ອງການ', dataIndex: 'departmentId', render: (v: string) => deptMap[v] ?? v },
     { title: 'ສະຖານທີ', dataIndex: 'location' },
     { title: 'ປະເພດ', dataIndex: 'workType' },
     { title: 'ລາຍລະອຽດ', dataIndex: 'description', ellipsis: true },
-    { title: 'ສະຖານະ', dataIndex: 'status', render: (v: string) => <StatusBadge status={v} /> },
     {
-      title: '', width: 110,
+      title: 'ສະຖານະ', dataIndex: 'status', width: 170,
+      render: (v: string, row: WorkRecord) => isMobile
+        ? <StatusBadge status={v} />
+        : (
+          <Select
+            size="small"
+            value={v}
+            style={{ width: 160 }}
+            loading={statusMutation.isPending && statusMutation.variables?.id === row.id}
+            onChange={(newStatus) => statusMutation.mutate({ id: row.id, status: newStatus })}
+            options={WORK_STATUSES.map((s) => ({ value: s, label: <StatusBadge status={s} /> }))}
+          />
+        ),
+    },
+    {
+      title: '', width: 80,
       render: (_: unknown, row: WorkRecord) => (
         <Space>
-          {row.status === 'ຍັງຄ້າງ' && (
-            <Popconfirm title="ຢືນຢັນວ່າວຽກສຳເລັດ?" onConfirm={() => completeMutation.mutate(row.id)} okText="ສຳເລັດ" cancelText="ຍົກເລີກ">
-              <Button
-                size="small"
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                loading={completeMutation.isPending && completeMutation.variables === row.id}
-              />
-            </Popconfirm>
-          )}
           <Button size="small" icon={<EditOutlined />} onClick={() => { setEditing(row); setFormOpen(true); }} />
           <Popconfirm title="ຢືນຢັນລົບ?" onConfirm={() => deleteMutation.mutate(row.id)}>
             <Button size="small" danger icon={<DeleteOutlined />} />
@@ -82,7 +96,7 @@ export default function WorkRecordsPage() {
   const handleExport = () => {
     const rows = records.map((r) => ({
       ວັນທີ: r.date,
-      ຜູ້ປະຕິບັດ: userMap[r.staffId] ?? r.staffId,
+      ຜູ້ປະຕິບັດ: (r.staffIds || '').split(',').map((id) => userMap[id] ?? id).join(', '),
       ຫ້ອງການ: deptMap[r.departmentId] ?? r.departmentId,
       ສະຖານທີ: r.location,
       ປະເພດ: r.workType,
@@ -138,28 +152,43 @@ export default function WorkRecordsPage() {
                 allowClear
                 style={{ width: '100%' }}
                 options={users.map((u) => ({ value: u.id, label: u.fullName }))}
-                onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.staffId = v; else delete n.staffId; return n; })}
+                onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.staffId = v as string; else delete n.staffId; return n; })}
               />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <Select
-                placeholder="ສະຖານະ"
                 allowClear
-                defaultValue="ຍັງຄ້າງ"
+                defaultValue="__active__"
                 style={{ width: '100%' }}
-                options={[{ value: 'ສຳເລັດ', label: 'ສຳເລັດ' }, { value: 'ຍັງຄ້າງ', label: 'ຍັງຄ້າງ' }]}
-                onChange={(v) => setFilters((f) => { const n = { ...f }; if (v) n.status = v; else delete n.status; return n; })}
+                options={[
+                  { value: '__active__', label: 'ທຸກ active' },
+                  ...WORK_STATUSES.map((s) => ({ value: s, label: s })),
+                ]}
+                onChange={(v) => setFilters((f) => {
+                  const n = { ...f };
+                  delete n.statuses;
+                  if (v === '__active__') n.statuses = ACTIVE_STATUSES;
+                  else if (v) n.statuses = v as string;
+                  return n;
+                })}
               />
             </div>
           </div>
         </div>
       </Card>
 
-      
-      
-
       <Card>
-        {isLoading ? <SkeletonTable rows={6} cols={6} /> : <ResponsiveTable columns={columns} dataSource={records} rowKey="id" scroll={{ x: 'max-content' }} mobilePrimaryFields={['date', 'workType', 'description', 'status']} />}
+        {isLoading
+          ? <SkeletonTable rows={6} cols={6} />
+          : <ResponsiveTable
+              columns={columns}
+              dataSource={records}
+              rowKey="id"
+              scroll={{ x: 'max-content' }}
+              mobilePrimaryFields={['date', 'workType', 'description', 'status']}
+              locale={{ emptyText: <Empty description="ບໍ່ມີຂໍ້ມູນ — ລອງປ່ຽນເງື່ອນໄຂການຄົ້ນຫາ" /> }}
+            />
+        }
       </Card>
 
       <WorkRecordForm

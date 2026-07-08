@@ -6,7 +6,13 @@ function handleDashboard(method, params) {
   if (method === 'stats') {
     var today = Utilities.formatDate(new Date(), 'Asia/Vientiane', 'yyyy-MM-dd');
 
-    var workToday = getWorkRecordsTable().where('date', '=', today).get();
+    var allWork = getWorkRecordsTable().findAll();
+    var workTodayCount = 0;
+    if (allWork.success) {
+      allWork.data.forEach(function(r) {
+        if (r.date && String(r.date).slice(0, 10) === today && r.status !== 'ຍົກເລີກ') workTodayCount++;
+      });
+    }
     var equipment = getEquipmentTable().findAll();
     var borrowing = getBorrowingHeaderTable().findAll();
 
@@ -32,7 +38,7 @@ function handleDashboard(method, params) {
     return {
       success: true,
       data: {
-        workToday: workToday.success ? workToday.data.length : 0,
+        workToday: workTodayCount,
         equipment: equipStats,
         borrowing: borrowStats
       }

@@ -50,12 +50,12 @@ function getWorkRecordsTable() {
   return getDb().table('WorkRecords').schema({
     id:           { type: 'string' },
     date:         { type: 'string', required: true },
-    staffId:      { type: 'string', required: true },
+    staffIds:     { type: 'string', required: true },
     departmentId: { type: 'string' },
     location:     { type: 'string' },
     workType:     { type: 'string', required: true },
     description:  { type: 'string' },
-    status:       { type: 'string', required: true, enum: ['ສຳເລັດ', 'ຍັງຄ້າງ'], default: 'ຍັງຄ້າງ' },
+    status:       { type: 'string', required: true, default: 'ຍັງຄ້າງ' },
     createdAt:    { type: 'string' },
     updatedAt:    { type: 'string' }
   });

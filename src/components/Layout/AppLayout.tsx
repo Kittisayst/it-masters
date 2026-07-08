@@ -28,15 +28,15 @@ const { Text } = Typography;
 const { useBreakpoint } = Grid;
 
 const navItems = [
-  { key: '/dashboard',    icon: <DashboardOutlined />, label: 'Dashboard' },
+  { key: '/dashboard',    icon: <DashboardOutlined />, label: 'ໜ້າຫຼັກ' },
   { key: '/work-records', icon: <FileTextOutlined />,  label: 'ໜ້າວຽກປະຈຳວັນ' },
   { key: '/equipment',    icon: <LaptopOutlined />,    label: 'ອຸປະກອນ IT' },
   { key: '/borrowing',    icon: <InboxOutlined />,     label: 'ຢືມອຸປະກອນ' },
   { key: '/disbursement', icon: <ExportOutlined />,    label: 'ເບີກຈ່າຍ' },
   { key: '/reports',     icon: <BarChartOutlined />,   label: 'ລາຍງານ' },
   { key: '/it-info',    icon: <KeyOutlined />,         label: 'ຂໍ້ມູນ IT' },
-  { key: '/qr-print',   icon: <QrcodeOutlined />,     label: 'Print QR' },
-  { key: '/qr-scan',    icon: <ScanOutlined />,        label: 'Scan QR' },
+  { key: '/qr-print',   icon: <QrcodeOutlined />,     label: 'ພິມ QR' },
+  { key: '/qr-scan',    icon: <ScanOutlined />,        label: 'ສະແກນ QR' },
   {
     key: 'settings',
     icon: <SettingOutlined />,
@@ -176,7 +176,7 @@ export default function AppLayout() {
     <Menu
       mode="inline"
       selectedKeys={[location.pathname]}
-      defaultOpenKeys={['settings']}
+      defaultOpenKeys={location.pathname.startsWith('/settings') ? ['settings'] : []}
       items={navItems}
       style={{ border: 'none', marginTop: 8 }}
       onClick={handleMenuClick}
@@ -184,7 +184,7 @@ export default function AppLayout() {
   );
 
   return (
-    <Layout style={{ minHeight: '100vh', position: 'relative' }}>
+    <Layout style={{ minHeight: '100dvh', position: 'relative' }}>
       {/* Desktop sidebar */}
       {!isMobile && (
         <Sider
@@ -205,8 +205,8 @@ export default function AppLayout() {
           onTouchStart={onSwipeTouchStart}
           onTouchEnd={onSwipeTouchEnd}
           style={{
-            position: 'fixed', top: 0, left: 0,
-            width: 24, height: '100dvh', zIndex: 200, touchAction: 'pan-y',
+            position: 'fixed', top: 64, left: 0,
+            width: 24, height: 'calc(100dvh - 64px)', zIndex: 200, touchAction: 'pan-y',
           }}
         />
       )}
@@ -237,16 +237,27 @@ export default function AppLayout() {
           }}
         >
           {isMobile ? (
-            <span
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              aria-label="ເປີດເມນູ"
               onClick={() => setDrawerOpen(true)}
-              style={{ cursor: 'pointer', fontSize: 20, color: token.colorTextSecondary, padding: '12px 16px 12px 4px', margin: '-12px -16px -12px -4px', display: 'inline-flex', alignItems: 'center' }}
-            >
-              <MenuOutlined />
-            </span>
+              style={{ fontSize: 18 }}
+            />
           ) : (
-            <span onClick={() => setCollapsed(!collapsed)} style={{ cursor: 'pointer', fontSize: 18, color: token.colorTextSecondary }}>
-              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            </span>
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              aria-label={collapsed ? 'ຂະຫຍາຍເມນູ' : 'ຫຍໍ້ເມນູ'}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{ fontSize: 16 }}
+            />
+          )}
+
+          {isMobile && (
+            <Text strong style={{ fontSize: 15, color: token.colorPrimary, position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+              IT Masters
+            </Text>
           )}
 
           <Popover

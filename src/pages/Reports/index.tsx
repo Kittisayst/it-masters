@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useReactToPrint } from 'react-to-print';
 import dayjs, { type Dayjs } from 'dayjs';
 import PageHeader from '../../components/common/PageHeader';
+import StatusBadge from '../../components/common/StatusBadge';
 import { workRecordsApi, equipmentApi, borrowingApi } from '../../services/api';
 import { exportToExcel } from '../../utils/exportExcel';
 import type { WorkRecord, Equipment, BorrowingHeader } from '../../types';
@@ -136,17 +137,18 @@ export default function ReportsPage() {
 
   // ── Work summaries ────────────────────────────────────────────────────
   const workSummary = [
-    { label: 'ທັງໝົດ', value: work.length },
-    { label: 'ສຳເລັດ', value: work.filter((r) => r.status === 'ສຳເລັດ').length },
-    { label: 'ຍັງຄ້າງ', value: work.filter((r) => r.status === 'ຍັງຄ້າງ').length },
-    { label: 'ສ້ອມແປງ', value: work.filter((r) => r.workType === 'ສ້ອມແປງ').length },
-    { label: 'ຕິດຕັ້ງ', value: work.filter((r) => r.workType === 'ຕິດຕັ້ງ').length },
+    { label: 'ທັງໝົດ',        value: work.length },
+    { label: 'ສຳເລັດ',        value: work.filter((r) => r.status === 'ສຳເລັດ').length },
+    { label: 'ກຳລັງດຳເນີນ', value: work.filter((r) => r.status === 'ກຳລັງດຳເນີນ').length },
+    { label: 'ລໍຖ້າ',         value: work.filter((r) => r.status === 'ລໍຖ້າ').length },
+    { label: 'ຍັງຄ້າງ',       value: work.filter((r) => r.status === 'ຍັງຄ້າງ').length },
+    { label: 'ຍົກເລີກ',       value: work.filter((r) => r.status === 'ຍົກເລີກ').length },
   ];
   const workCols = [
     { title: 'ວັນທີ', dataIndex: 'date', render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
     { title: 'ປະເພດ', dataIndex: 'workType' },
     { title: 'ລາຍລະອຽດ', dataIndex: 'description' },
-    { title: 'ສະຖານະ', dataIndex: 'status', render: (v: string) => <Tag color={v === 'ສຳເລັດ' ? 'success' : 'warning'}>{v}</Tag> },
+    { title: 'ສະຖານະ', dataIndex: 'status', render: (v: string) => <StatusBadge status={v} /> },
   ];
 
   // ── Equipment summaries ───────────────────────────────────────────────

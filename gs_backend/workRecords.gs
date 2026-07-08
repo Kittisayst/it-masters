@@ -11,12 +11,24 @@ function handleWorkRecords(method, params) {
 
   if (method === 'find') {
     var q = table;
-    if (params.staffId)      q = q.where('staffId', '=', params.staffId);
     if (params.departmentId) q = q.where('departmentId', '=', params.departmentId);
-    if (params.status)       q = q.where('status', '=', params.status);
     if (params.dateFrom)     q = q.where('date', '>=', params.dateFrom);
     if (params.dateTo)       q = q.where('date', '<=', params.dateTo);
-    return q.orderBy('createdAt', 'DESC').get();
+    var result = q.orderBy('createdAt', 'DESC').get();
+    if (result.success) {
+      if (params.statuses) {
+        var statusList = String(params.statuses).split(',');
+        result.data = result.data.filter(function(r) {
+          return statusList.indexOf(String(r.status || '')) !== -1;
+        });
+      }
+      if (params.staffId) {
+        result.data = result.data.filter(function(r) {
+          return String(r.staffIds || '').split(',').indexOf(params.staffId) !== -1;
+        });
+      }
+    }
+    return result;
   }
 
   if (method === 'findById') return table.findById(params.id);

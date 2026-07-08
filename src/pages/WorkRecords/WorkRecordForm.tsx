@@ -25,11 +25,15 @@ export default function WorkRecordForm({ open, record, onClose, onSuccess }: Pro
   useEffect(() => {
     if (open) {
       if (record) {
-        form.setFieldsValue({ ...record, date: dayjs(record.date) });
+        form.setFieldsValue({
+          ...record,
+          date: dayjs(record.date),
+          staffIds: record.staffIds ? record.staffIds.split(',') : [],
+        });
       } else {
         form.resetFields();
         form.setFieldValue('date', dayjs());
-        form.setFieldValue('staffId', currentUser?.id);
+        form.setFieldValue('staffIds', currentUser?.id ? [currentUser.id] : []);
         form.setFieldValue('status', 'ຍັງຄ້າງ');
       }
     }
@@ -37,7 +41,11 @@ export default function WorkRecordForm({ open, record, onClose, onSuccess }: Pro
 
   const mutation = useMutation({
     mutationFn: (values: Record<string, unknown>) => {
-      const data = { ...values, date: (values.date as dayjs.Dayjs).format('YYYY-MM-DD') };
+      const data = {
+        ...values,
+        date: (values.date as dayjs.Dayjs).format('YYYY-MM-DD'),
+        staffIds: Array.isArray(values.staffIds) ? (values.staffIds as string[]).join(',') : values.staffIds,
+      };
       return record
         ? workRecordsApi.update(record.id, data)
         : workRecordsApi.insert(data);
@@ -62,8 +70,8 @@ export default function WorkRecordForm({ open, record, onClose, onSuccess }: Pro
         <Form.Item name="date" label="ວັນທີ" rules={[{ required: true }]}>
           <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
         </Form.Item>
-        <Form.Item name="staffId" label="ຜູ້ປະຕິບັດ" rules={[{ required: true }]}>
-          <Select options={users.map((u) => ({ value: u.id, label: u.fullName }))} />
+        <Form.Item name="staffIds" label="ຜູ້ປະຕິບັດ" rules={[{ required: true, message: 'ເລືອກຢ່າງໜ້ອຍ 1 ຄົນ' }]}>
+          <Select mode="multiple" options={users.map((u) => ({ value: u.id, label: u.fullName }))} />
         </Form.Item>
         <Form.Item name="departmentId" label="ຫ້ອງການ/ພະແນກ (ຜູ້ຂໍຮັບບໍລິການ)">
           <Select allowClear options={departments.map((d) => ({ value: d.id, label: d.name }))} />
@@ -78,7 +86,7 @@ export default function WorkRecordForm({ open, record, onClose, onSuccess }: Pro
           <Input.TextArea rows={3} />
         </Form.Item>
         <Form.Item name="status" label="ສະຖານະ" rules={[{ required: true }]}>
-          <Select options={[{ value: 'ສຳເລັດ', label: 'ສຳເລັດ' }, { value: 'ຍັງຄ້າງ', label: 'ຍັງຄ້າງ' }]} />
+          <Select options={['ຍັງຄ້າງ', 'ກຳລັງດຳເນີນ', 'ລໍຖ້າ', 'ສຳເລັດ', 'ຍົກເລີກ'].map((s) => ({ value: s, label: s }))} />
         </Form.Item>
       </Form>
     </Modal>

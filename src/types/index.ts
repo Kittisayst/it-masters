@@ -40,12 +40,12 @@ export interface WorkType {
 export interface WorkRecord {
   id: string;
   date: string;
-  staffId: string;
+  staffIds: string;
   departmentId: string;
   location: string;
   workType: string;
   description: string;
-  status: 'ສຳເລັດ' | 'ຍັງຄ້າງ';
+  status: 'ຍັງຄ້າງ' | 'ກຳລັງດຳເນີນ' | 'ລໍຖ້າ' | 'ສຳເລັດ' | 'ຍົກເລີກ';
   createdAt?: string;
   updatedAt?: string;
 }
