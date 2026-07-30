@@ -80,6 +80,7 @@ export interface BorrowingHeader {
   status: 'ກຳລັງຢືມ' | 'ຄືນແລ້ວ' | 'ເກີນກຳນົດ';
   createdAt?: string;
   updatedAt?: string;
+  equipmentList?: Equipment[];
 }
 
 export interface BorrowingItem {
@@ -116,6 +117,30 @@ export interface DisbursementItem {
 export interface DisbursementDetail {
   header: DisbursementHeader;
   items: DisbursementItem[];
+}
+
+export interface Room {
+  id: string;
+  code: string;
+  name: string;
+  location: string;
+  computerCount?: number;
+  responsiblePerson?: string;
+  status: 'ປົກກະຕິ' | 'ຖືກຢືມ';
+}
+
+export interface RoomBorrowing {
+  id: string;
+  employeeId: string;
+  roomId: string;
+  borrowedAt: string;
+  dueDate?: string;
+  returnedAt?: string;
+  recordedBy: string;
+  purpose?: string;
+  status: 'ກຳລັງຢືມ' | 'ສົ່ງແລ້ວ' | 'ເກີນກຳນົດ';
+  room?: Room | null;
+  employee?: Employee | null;
 }
 
 export interface DashboardStats {

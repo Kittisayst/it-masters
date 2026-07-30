@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Select, Space, Popconfirm } from 'antd';
+import { Button, Card, Select, Space, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, PrinterOutlined, CheckOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -49,6 +49,14 @@ export default function BorrowingPage() {
   const columns = [
     { title: 'ລະຫັດ', dataIndex: 'borrowCode', width: 90 },
     { title: 'ຜູ້ຢືມ', dataIndex: 'borrowerId', render: (v: string) => empMap[v] ?? v },
+    {
+      title: 'ອຸປະກອນ', dataIndex: 'equipmentList',
+      render: (v: BorrowingHeader['equipmentList']) => (
+        <Space size={[4, 4]} wrap>
+          {(v ?? []).map((eq) => <Tag key={eq.id}>{eq.name}</Tag>)}
+        </Space>
+      ),
+    },
     { title: 'ວັນທີຢືມ', dataIndex: 'borrowDate', width: 110, render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
     { title: 'ກຳນົດຄືນ', dataIndex: 'dueDate', width: 110, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '-' },
     { title: 'ຄືນຈິງ', dataIndex: 'returnDate', width: 110, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '-' },
@@ -73,6 +81,7 @@ export default function BorrowingPage() {
     const rows = records.map((r) => ({
       ລະຫັດ: r.borrowCode,
       ຜູ້ຢືມ: empMap[r.borrowerId] ?? r.borrowerId,
+      ອຸປະກອນ: (r.equipmentList ?? []).map((eq) => eq.name).join(', '),
       ວັນທີຢືມ: r.borrowDate,
       ກຳນົດຄືນ: r.dueDate,
       ຄືນຈິງ: r.returnDate ?? '',

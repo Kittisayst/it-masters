@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { categoriesApi, departmentsApi, employeesApi, usersApi, equipmentApi, workTypesApi } from '../services/api';
-import type { Category, Department, Employee, User, Equipment, WorkType } from '../types';
+import { categoriesApi, departmentsApi, employeesApi, usersApi, equipmentApi, workTypesApi, roomsApi } from '../services/api';
+import type { Category, Department, Employee, User, Equipment, WorkType, Room } from '../types';
 
 export function useCategories() {
   return useQuery({
@@ -46,5 +46,19 @@ export function useWorkTypes() {
   return useQuery({
     queryKey: ['workTypes'],
     queryFn: async () => unwrap(await workTypesApi.findAll(), [] as WorkType[]),
+  });
+}
+
+export function useRooms() {
+  return useQuery({
+    queryKey: ['rooms'],
+    queryFn: async () => unwrap(await roomsApi.findAll(), [] as Room[]),
+  });
+}
+
+export function useAvailableRooms() {
+  return useQuery({
+    queryKey: ['rooms', 'available'],
+    queryFn: async () => unwrap(await roomsApi.find({ status: 'ປົກກະຕິ' }), [] as Room[]),
   });
 }

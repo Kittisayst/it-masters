@@ -10,6 +10,26 @@ function generateBorrowCode() {
   return 'B-' + String(num).padStart(3, '0');
 }
 
+function attachEquipmentList(result, itemsTable, equipTable) {
+  if (!result.success) return result;
+
+  var allItems = itemsTable.findAll();
+  var allEquip = equipTable.findAll();
+  var equipMap = {};
+  (allEquip.data || []).forEach(function(e) { equipMap[e.id] = e; });
+
+  var itemsByBorrowing = {};
+  (allItems.data || []).forEach(function(it) {
+    if (!itemsByBorrowing[it.borrowingId]) itemsByBorrowing[it.borrowingId] = [];
+    itemsByBorrowing[it.borrowingId].push(equipMap[it.equipmentId] || { id: it.equipmentId, name: it.equipmentId, code: '' });
+  });
+
+  result.data.forEach(function(h) {
+    h.equipmentList = itemsByBorrowing[h.id] || [];
+  });
+  return result;
+}
+
 function handleBorrowing(method, params) {
   var headers = getBorrowingHeaderTable();
   var items   = getBorrowingItemsTable();
@@ -17,14 +37,14 @@ function handleBorrowing(method, params) {
 
   // ------ READ ------
   if (method === 'findAll') {
-    return headers.orderBy('borrowDate', 'DESC').get();
+    return attachEquipmentList(headers.orderBy('borrowDate', 'DESC').get(), items, equip);
   }
 
   if (method === 'find') {
     var q = headers;
     if (params.status)     q = q.where('status', '=', params.status);
     if (params.borrowerId) q = q.where('borrowerId', '=', params.borrowerId);
-    return q.orderBy('borrowDate', 'DESC').get();
+    return attachEquipmentList(q.orderBy('borrowDate', 'DESC').get(), items, equip);
   }
 
   if (method === 'findById') {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, Category, Department, Employee, Equipment, ItInfo, User, WorkRecord, WorkType, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats } from '../types';
+import type { ApiResponse, Category, Department, Employee, Equipment, ItInfo, User, WorkRecord, WorkType, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats, Room, RoomBorrowing } from '../types';
 
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string;
 
@@ -102,6 +102,25 @@ export const disbursementApi = {
   insert: (header: Record<string, unknown>, items: Record<string, unknown>[]) =>
     callApi('disbursement', 'insert', { header, items }),
   delete: (id: string) => callApi('disbursement', 'delete', { id }),
+};
+
+// Rooms
+export const roomsApi = {
+  findAll: () => callApi<Room[]>('rooms', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<Room[]>('rooms', 'find', params),
+  insert: (data: Record<string, unknown>) => callApi<Room>('rooms', 'insert', data),
+  update: (id: string, data: Record<string, unknown>) => callApi<Room>('rooms', 'update', { id, data }),
+  delete: (id: string) => callApi('rooms', 'delete', { id }),
+};
+
+// Room Borrowing (ຢືມກະແຈຫ້ອງຄອມ)
+export const roomBorrowingApi = {
+  findAll: () => callApi<RoomBorrowing[]>('roomBorrowing', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<RoomBorrowing[]>('roomBorrowing', 'find', params),
+  insert: (data: Record<string, unknown>) => callApi('roomBorrowing', 'insert', data),
+  return: (id: string, returnedAt?: string) => callApi('roomBorrowing', 'return', { id, returnedAt }),
+  delete: (id: string) => callApi('roomBorrowing', 'delete', { id }),
+  stats: () => callApi('roomBorrowing', 'stats'),
 };
 
 // IT Info Registry

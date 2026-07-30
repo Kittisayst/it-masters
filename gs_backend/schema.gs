@@ -159,6 +159,32 @@ function getItInfoTable() {
   });
 }
 
+function getRoomsTable() {
+  return getDb().table('Rooms').schema({
+    id:                { type: 'string' },
+    code:              { type: 'string', required: true },
+    name:              { type: 'string', required: true },
+    location:          { type: 'string' },
+    computerCount:     { type: 'number' },
+    responsiblePerson: { type: 'string' },
+    status:            { type: 'string', required: true, enum: ['ປົກກະຕິ', 'ຖືກຢືມ'], default: 'ປົກກະຕິ' }
+  });
+}
+
+function getRoomBorrowingsTable() {
+  return getDb().table('RoomBorrowings').schema({
+    id:         { type: 'string' },
+    employeeId: { type: 'string', required: true },
+    roomId:     { type: 'string', required: true },
+    borrowedAt: { type: 'string', required: true },
+    dueDate:    { type: 'string' },
+    returnedAt: { type: 'string' },
+    recordedBy: { type: 'string' },
+    purpose:    { type: 'string' },
+    status:     { type: 'string', required: true, enum: ['ກຳລັງຢືມ', 'ສົ່ງແລ້ວ', 'ເກີນກຳນົດ'], default: 'ກຳລັງຢືມ' }
+  });
+}
+
 // ====================================================
 // Migration — run once to create all sheets
 // ====================================================
@@ -227,6 +253,16 @@ function runMigrations() {
       version: '010', name: 'create_worktypes',
       up: function(db) { db.createTable('WorkTypes', ['id','name','description','createdAt','updatedAt']); },
       down: function(db) { db.dropTable('WorkTypes'); }
+    },
+    {
+      version: '011', name: 'create_rooms',
+      up: function(db) { db.createTable('Rooms', ['id','code','name','location','computerCount','responsiblePerson','status']); },
+      down: function(db) { db.dropTable('Rooms'); }
+    },
+    {
+      version: '012', name: 'create_room_borrowings',
+      up: function(db) { db.createTable('RoomBorrowings', ['id','employeeId','roomId','borrowedAt','dueDate','returnedAt','recordedBy','purpose','status']); },
+      down: function(db) { db.dropTable('RoomBorrowings'); }
     }
   ];
   var result = SheetORM.migrate(SPREADSHEET_ID, migrations);
@@ -320,6 +356,44 @@ function runSeedEquipment() {
     { code: 'IT-004', name: 'Cisco Switch 24-port',       type: 'Network',        categoryId: catMap['Network'],       serialNumber: 'CS-2023-001', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-09-05', fundSource: 'ໂຄງການ JICA',   price: 9000000,  recordedBy: adminId },
     { code: 'IT-005', name: 'Dell Desktop OptiPlex 3090', type: 'ຄອມ',            categoryId: catMap['ຄອມພິວເຕີ'],    serialNumber: 'DK-2022-001', location: 'ຫ້ອງ Lab 1',  status: 'ປົກກະຕິ', receivedDate: '2022-06-20', fundSource: 'ງົບປະມານ 2022',  price: 7000000,  recordedBy: adminId },
     { code: 'IT-006', name: 'APC UPS 1000VA',             type: 'ອຸປະກອນໄຟຟ້າ', categoryId: catMap['ອຸປະກອນໄຟຟ້າ'], serialNumber: 'APC-2023-01', location: 'ຫ້ອງ Server',  status: 'ປົກກະຕິ', receivedDate: '2023-03-15', fundSource: 'ງົບປະມານ 2023',  price: 2500000,  recordedBy: adminId }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Migration 011-012 only — run if sheets Rooms/RoomBorrowings missing
+// ====================================================
+function runMigration011_012_Rooms() {
+  var result = SheetORM.migrate(SPREADSHEET_ID, [
+    {
+      version: '011', name: 'create_rooms',
+      up: function(db) { db.createTable('Rooms', ['id','code','name','location','computerCount','responsiblePerson','status']); },
+      down: function(db) { db.dropTable('Rooms'); }
+    },
+    {
+      version: '012', name: 'create_room_borrowings',
+      up: function(db) { db.createTable('RoomBorrowings', ['id','employeeId','roomId','borrowedAt','dueDate','returnedAt','recordedBy','purpose','status']); },
+      down: function(db) { db.dropTable('RoomBorrowings'); }
+    }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Seed rooms — requires Employees to exist first (responsiblePerson)
+// ====================================================
+function runSeedRooms() {
+  var employees = getEmployeesTable().findAll();
+  if (!employees.success || !employees.data.length) { Logger.log('Employees not found'); return; }
+
+  var emp = employees.data;
+  var e0 = emp[0];
+  var e1 = emp[1] || emp[0];
+
+  var result = getRoomsTable().insertMany([
+    { code: 'A101', name: 'ຫ້ອງຄອມ A101', location: 'ອາຄານ A ຊັ້ນ 1', computerCount: 30, responsiblePerson: e0.id, status: 'ປົກກະຕິ' },
+    { code: 'A102', name: 'ຫ້ອງຄອມ A102', location: 'ອາຄານ A ຊັ້ນ 1', computerCount: 25, responsiblePerson: e0.id, status: 'ປົກກະຕິ' },
+    { code: 'B201', name: 'ຫ້ອງຄອມ B201', location: 'ອາຄານ B ຊັ້ນ 2', computerCount: 20, responsiblePerson: e1.id, status: 'ປົກກະຕິ' }
   ]);
   Logger.log(JSON.stringify(result));
 }

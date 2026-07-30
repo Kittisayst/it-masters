@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import WorkRecordsPage from './pages/WorkRecords';
 import EquipmentPage from './pages/Equipment';
 import BorrowingPage from './pages/Borrowing';
+import RoomBorrowingPage from './pages/RoomBorrowing';
 import DisbursementPage from './pages/Disbursement';
 import ReportsPage from './pages/Reports';
 import QrPrintPage from './pages/QrPrint';
@@ -19,6 +20,7 @@ import UsersSettings from './pages/Settings/Users';
 import CategoriesSettings from './pages/Settings/Categories';
 import DepartmentsSettings from './pages/Settings/Departments';
 import EmployeesSettings from './pages/Settings/Employees';
+import RoomsSettings from './pages/Settings/Rooms';
 import ItInfoPage from './pages/ItInfo';
 import WorkTypesSettings from './pages/Settings/WorkTypes';
 import ProfilePage from './pages/Profile';
@@ -61,6 +63,7 @@ export default function App() {
                 <Route path="work-records" element={<WorkRecordsPage />} />
                 <Route path="equipment"    element={<EquipmentPage />} />
                 <Route path="borrowing"    element={<BorrowingPage />} />
+                <Route path="room-borrowing" element={<RoomBorrowingPage />} />
                 <Route path="disbursement" element={<DisbursementPage />} />
                 <Route path="reports"              element={<ReportsPage />} />
                 <Route path="qr-print"            element={<QrPrintPage />} />
@@ -70,6 +73,7 @@ export default function App() {
                 <Route path="settings/categories"  element={<CategoriesSettings />} />
                 <Route path="settings/departments" element={<DepartmentsSettings />} />
                 <Route path="settings/employees"   element={<EmployeesSettings />} />
+                <Route path="settings/rooms"       element={<RoomsSettings />} />
                 <Route path="settings/work-types"  element={<WorkTypesSettings />} />
                 <Route path="profile"              element={<ProfilePage />} />
               </Route>

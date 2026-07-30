@@ -39,7 +39,9 @@ function doPost(e) {
       disbursement: handleDisbursement,
       dashboard:    handleDashboard,
       itInfo:       handleItInfo,
-      workTypes:    handleWorkTypes
+      workTypes:    handleWorkTypes,
+      rooms:        handleRooms,
+      roomBorrowing: handleRoomBorrowing
     };
 
     if (!handlers[action]) {

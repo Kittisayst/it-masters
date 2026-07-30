@@ -17,6 +17,8 @@ const statusColors: Record<string, string> = {
   'ກຳລັງຢືມ': 'processing',
   'ຄືນແລ້ວ': 'success',
   'ເກີນກຳນົດ': 'error',
+  // Room Borrowing
+  'ສົ່ງແລ້ວ': 'success',
 };
 
 interface Props {

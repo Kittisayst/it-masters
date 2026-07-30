@@ -17,6 +17,7 @@ import {
   QrcodeOutlined,
   ScanOutlined,
   KeyOutlined,
+  LockOutlined,
   BulbOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -32,6 +33,7 @@ const navItems = [
   { key: '/work-records', icon: <FileTextOutlined />,  label: 'ໜ້າວຽກປະຈຳວັນ' },
   { key: '/equipment',    icon: <LaptopOutlined />,    label: 'ອຸປະກອນ IT' },
   { key: '/borrowing',    icon: <InboxOutlined />,     label: 'ຢືມອຸປະກອນ' },
+  { key: '/room-borrowing', icon: <LockOutlined />,    label: 'ຢືມກະແຈຫ້ອງຄອມ' },
   { key: '/disbursement', icon: <ExportOutlined />,    label: 'ເບີກຈ່າຍ' },
   { key: '/reports',     icon: <BarChartOutlined />,   label: 'ລາຍງານ' },
   { key: '/it-info',    icon: <KeyOutlined />,         label: 'ຂໍ້ມູນ IT' },
@@ -47,6 +49,7 @@ const navItems = [
       { key: '/settings/departments', label: 'ຫ້ອງການ/ພະແນກ' },
       { key: '/settings/employees',   label: 'ພະນັກງານ' },
       { key: '/settings/work-types',  label: 'ປະເພດວຽກ' },
+      { key: '/settings/rooms',       label: 'ຫ້ອງຄອມ' },
     ],
   },
 ];
