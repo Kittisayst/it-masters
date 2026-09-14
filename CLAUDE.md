@@ -79,3 +79,17 @@ See `.env.example` for required variables.
 Borrowing and Disbursement use header+items pattern (two sheets per entity). All other entities are single-sheet.
 
 All types are in `src/types/index.ts`. All API calls go through named api objects in `src/services/api.ts` (`equipmentApi`, `borrowingApi`, `itInfoApi`, etc.).
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues in `Kittisayst/it-masters`, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five canonical roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), no renaming. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
