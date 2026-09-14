@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Descriptions, Popconfirm, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Button, Card, Collapse, Descriptions, Popconfirm, Space, Spin, Tag, Typography } from 'antd';
 import {
   CheckCircleOutlined,
   ScanOutlined,
@@ -142,20 +142,27 @@ function ActionPanel({
   );
 }
 
-// ── Network port list (view-only) ───────────────────────────────────────────────
+// ── Network port list (view-only, tap a port to see its connection) ────────────
+const PORT_STATUS_COLOR: Record<string, string> = {
+  ໃຊ້ງານ: 'processing',
+  ບໍ່ໃຊ້ງານ: 'default',
+  ວ່າງ: 'success',
+};
+
 function NetworkPortPanel({ equipment, onReset }: { equipment: Equipment; onReset: () => void }) {
   const { data: ports = [], isLoading } = useNetworkPortsForEquipment(equipment.id);
+  const usedCount = ports.filter((p) => p.status === 'ໃຊ້ງານ').length;
 
-  const columns = [
-    { title: 'Port', dataIndex: 'portNumber', width: 60 },
-    { title: 'ຕໍ່ໄປໃສ', dataIndex: 'connectsTo', render: (v: string) => v || '-' },
-    {
-      title: 'ສະຖານະ', dataIndex: 'status', width: 110,
-      render: (v: string) => (
-        <Tag color={v === 'ໃຊ້ງານ' ? 'processing' : v === 'ບໍ່ໃຊ້ງານ' ? 'default' : 'success'}>{v}</Tag>
-      ),
-    },
-  ];
+  const items = ports.map((p) => ({
+    key: p.id,
+    label: (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Port {p.portNumber}</span>
+        <Tag color={PORT_STATUS_COLOR[p.status] ?? 'default'} style={{ marginRight: 0 }}>{p.status}</Tag>
+      </div>
+    ),
+    children: <Text>{p.connectsTo || 'ບໍ່ມີຂໍ້ມູນຕໍ່ໄປໃສ'}</Text>,
+  }));
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
@@ -167,18 +174,18 @@ function NetworkPortPanel({ equipment, onReset }: { equipment: Equipment; onRese
         <Descriptions column={1} size="small" styles={{ label: { color: '#8c8c8c', width: 120 } }}>
           <Descriptions.Item label="ລະຫັດ">{equipment.code}</Descriptions.Item>
           <Descriptions.Item label="ສະຖານທີ">{equipment.location || '-'}</Descriptions.Item>
+          <Descriptions.Item label="ຈຳນວນ Port">{usedCount} / {ports.length} ໃຊ້ງານ</Descriptions.Item>
         </Descriptions>
       </Card>
 
       <Card size="small" title="ລາຍການ Port" style={{ marginBottom: 16 }}>
-        <Table
-          size="small"
-          rowKey="id"
-          columns={columns as never}
-          dataSource={ports}
-          loading={isLoading}
-          pagination={false}
-        />
+        {isLoading ? (
+          <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+        ) : ports.length === 0 ? (
+          <Text type="secondary">ຍັງບໍ່ໄດ້ສ້າງ port</Text>
+        ) : (
+          <Collapse items={items} size="small" />
+        )}
       </Card>
 
       <Button icon={<ScanOutlined />} block onClick={onReset}>
@@ -206,10 +213,9 @@ export default function QrScanPage() {
     }
     setState({ phase: 'loading' });
     try {
-      const res = await equipmentApi.find({ id: raw });
-      const list = (res.data ?? []) as Equipment[];
-      if (list.length > 0) {
-        setState({ phase: 'found', equipment: list[0] });
+      const res = await equipmentApi.findById(raw);
+      if (res.success && res.data) {
+        setState({ phase: 'found', equipment: res.data as Equipment });
       } else {
         setState({ phase: 'notfound', id: raw });
       }

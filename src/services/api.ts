@@ -75,6 +75,7 @@ export const workRecordsApi = {
 export const equipmentApi = {
   findAll: () => callApi<Equipment[]>('equipment', 'findAll'),
   find: (params: Record<string, unknown>) => callApi<Equipment[]>('equipment', 'find', params),
+  findById: (id: string) => callApi<Equipment>('equipment', 'findById', { id }),
   insert: (data: Record<string, unknown>) => callApi<Equipment>('equipment', 'insert', data),
   update: (id: string, data: Record<string, unknown>) => callApi<Equipment>('equipment', 'update', { id, data }),
   delete: (id: string) => callApi('equipment', 'delete', { id }),
