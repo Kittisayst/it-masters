@@ -152,6 +152,14 @@ export interface RoomComputer {
   recordedBy?: string;
 }
 
+export interface NetworkPort {
+  id: string;
+  equipmentId: string;
+  portNumber: number;
+  connectsTo?: string;
+  status: 'ໃຊ້ງານ' | 'ບໍ່ໃຊ້ງານ' | 'ວ່າງ';
+}
+
 export interface DashboardStats {
   workToday: number;
   equipment: {

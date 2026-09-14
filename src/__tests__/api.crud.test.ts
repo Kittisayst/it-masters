@@ -354,6 +354,83 @@ describe('RoomComputer CRUD', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+// NetworkPort
+// ════════════════════════════════════════════════════════════════════════════
+describe('NetworkPort CRUD', () => {
+  let equipId: string;
+
+  test('setup — insert a network device', async () => {
+    const equip = await call<{ id: string }>('equipment', 'insert', {
+      code: 'TST-NP-001',
+      name: '__TEST_NP_SWITCH__',
+      type: 'Network',
+      status: 'ປົກກະຕິ',
+    });
+    expect(equip.success).toBe(true);
+    equipId = equip.data.id;
+  });
+
+  test('generate — creates ports 1..N', async () => {
+    const res = await call('networkPorts', 'generate', { equipmentId: equipId, count: 8 });
+    expect(res.success).toBe(true);
+
+    const ports = await call<{ portNumber: number }[]>('networkPorts', 'find', { equipmentId: equipId });
+    expect(ports.success).toBe(true);
+    expect(ports.data.length).toBe(8);
+    expect(ports.data.map((p) => p.portNumber).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  test('update — set connectsTo and status on a port', async () => {
+    const ports = await call<{ id: string; portNumber: number }[]>('networkPorts', 'find', { equipmentId: equipId });
+    const port1 = ports.data.find((p) => p.portNumber === 1)!;
+
+    const res = await call('networkPorts', 'update', { id: port1.id, data: { connectsTo: 'ຫ້ອງ A101', status: 'ໃຊ້ງານ' } });
+    expect(res.success).toBe(true);
+
+    const verify = await call<{ portNumber: number; connectsTo: string; status: string }[]>('networkPorts', 'find', { equipmentId: equipId });
+    const updated = verify.data.find((p) => p.portNumber === 1)!;
+    expect(updated.connectsTo).toBe('ຫ້ອງ A101');
+    expect(updated.status).toBe('ໃຊ້ງານ');
+  });
+
+  test('generate — increasing count adds ports without touching existing ones', async () => {
+    const res = await call('networkPorts', 'generate', { equipmentId: equipId, count: 12 });
+    expect(res.success).toBe(true);
+
+    const ports = await call<{ portNumber: number; connectsTo: string }[]>('networkPorts', 'find', { equipmentId: equipId });
+    expect(ports.data.length).toBe(12);
+    const port1 = ports.data.find((p) => p.portNumber === 1)!;
+    expect(port1.connectsTo).toBe('ຫ້ອງ A101');
+  });
+
+  test('generate — decreasing count is blocked when a removed port has data', async () => {
+    const res = await call('networkPorts', 'generate', { equipmentId: equipId, count: 0 });
+    expect(res.success).toBe(false);
+
+    const ports = await call<unknown[]>('networkPorts', 'find', { equipmentId: equipId });
+    expect(ports.data.length).toBe(12);
+  });
+
+  test('generate — decreasing count succeeds when removed ports are empty', async () => {
+    const res = await call('networkPorts', 'generate', { equipmentId: equipId, count: 8 });
+    expect(res.success).toBe(true);
+
+    const ports = await call<{ portNumber: number }[]>('networkPorts', 'find', { equipmentId: equipId });
+    expect(ports.data.length).toBe(8);
+    expect(ports.data.some((p) => p.portNumber === 1)).toBe(true);
+  });
+
+  test('deleting the equipment cascades delete of its NetworkPort rows', async () => {
+    const del = await call('equipment', 'delete', { id: equipId });
+    expect(del.success).toBe(true);
+
+    const ports = await call<unknown[]>('networkPorts', 'find', { equipmentId: equipId });
+    expect(ports.success).toBe(true);
+    expect(ports.data.length).toBe(0);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 // Borrowing
 // ════════════════════════════════════════════════════════════════════════════
 describe('Borrowing CRUD', () => {

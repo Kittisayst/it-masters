@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import WorkRecordsPage from './pages/WorkRecords';
 import EquipmentPage from './pages/Equipment';
+import NetworkPage from './pages/Network';
 import BorrowingPage from './pages/Borrowing';
 import RoomBorrowingPage from './pages/RoomBorrowing';
 import DisbursementPage from './pages/Disbursement';
@@ -62,6 +63,7 @@ export default function App() {
                 <Route path="dashboard"    element={<Dashboard />} />
                 <Route path="work-records" element={<WorkRecordsPage />} />
                 <Route path="equipment"    element={<EquipmentPage />} />
+                <Route path="network"      element={<NetworkPage />} />
                 <Route path="borrowing"    element={<BorrowingPage />} />
                 <Route path="room-borrowing" element={<RoomBorrowingPage />} />
                 <Route path="disbursement" element={<DisbursementPage />} />

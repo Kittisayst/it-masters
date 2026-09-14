@@ -181,6 +181,16 @@ function getRoomComputersTable() {
   });
 }
 
+function getNetworkPortsTable() {
+  return getDb().table('NetworkPorts').schema({
+    id:          { type: 'string' },
+    equipmentId: { type: 'string', required: true },
+    portNumber:  { type: 'number', required: true },
+    connectsTo:  { type: 'string' },
+    status:      { type: 'string', required: true, enum: ['ໃຊ້ງານ', 'ບໍ່ໃຊ້ງານ', 'ວ່າງ'], default: 'ວ່າງ' }
+  });
+}
+
 function getRoomBorrowingsTable() {
   return getDb().table('RoomBorrowings').schema({
     id:         { type: 'string' },
@@ -278,6 +288,11 @@ function runMigrations() {
       version: '013', name: 'create_room_computers',
       up: function(db) { db.createTable('RoomComputers', ['id','equipmentId','roomId','assignedAt','recordedBy']); },
       down: function(db) { db.dropTable('RoomComputers'); }
+    },
+    {
+      version: '014', name: 'create_network_ports',
+      up: function(db) { db.createTable('NetworkPorts', ['id','equipmentId','portNumber','connectsTo','status']); },
+      down: function(db) { db.dropTable('NetworkPorts'); }
     }
   ];
   var result = SheetORM.migrate(SPREADSHEET_ID, migrations);
@@ -403,6 +418,20 @@ function runMigration013_RoomComputers() {
       version: '013', name: 'create_room_computers',
       up: function(db) { db.createTable('RoomComputers', ['id','equipmentId','roomId','assignedAt','recordedBy']); },
       down: function(db) { db.dropTable('RoomComputers'); }
+    }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Migration 014 only — run if sheet NetworkPorts missing
+// ====================================================
+function runMigration014_NetworkPorts() {
+  var result = SheetORM.migrate(SPREADSHEET_ID, [
+    {
+      version: '014', name: 'create_network_ports',
+      up: function(db) { db.createTable('NetworkPorts', ['id','equipmentId','portNumber','connectsTo','status']); },
+      down: function(db) { db.dropTable('NetworkPorts'); }
     }
   ]);
   Logger.log(JSON.stringify(result));

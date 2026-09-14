@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { equipmentApi, roomComputersApi } from '../../services/api';
 import { useUsers, useCategories, useRooms } from '../../hooks/useReferenceData';
 import { useAuthStore } from '../../store/useAuthStore';
+import NetworkPortsSection from './NetworkPortsSection';
 import type { Equipment, RoomComputer } from '../../types';
 
 interface Props {
@@ -13,12 +14,13 @@ interface Props {
   equipment: Equipment | null;
   onClose: () => void;
   onSuccess: () => void;
+  defaultType?: string;
 }
 
 const TYPES = ['ຄອມ', 'Printer', 'Projector', 'Network', 'ອື່ນໆ'];
 const STATUSES = ['ປົກກະຕິ', 'ສ້ອມແປງ', 'ປົດລຶບ'];
 
-export default function EquipmentForm({ open, equipment, onClose, onSuccess }: Props) {
+export default function EquipmentForm({ open, equipment, onClose, onSuccess, defaultType }: Props) {
   const [form] = Form.useForm();
   const currentUser = useAuthStore((s) => s.user);
   const { data: users = [] } = useUsers();
@@ -46,9 +48,10 @@ export default function EquipmentForm({ open, equipment, onClose, onSuccess }: P
         form.resetFields();
         form.setFieldValue('status', 'ປົກກະຕິ');
         form.setFieldValue('recordedBy', currentUser?.id);
+        if (defaultType) form.setFieldValue('type', defaultType);
       }
     }
-  }, [open, equipment, form, currentUser]);
+  }, [open, equipment, form, currentUser, defaultType]);
 
   useEffect(() => {
     if (open && equipment) {
@@ -117,6 +120,11 @@ export default function EquipmentForm({ open, equipment, onClose, onSuccess }: P
               options={rooms.map((r) => ({ value: r.id, label: `${r.code} - ${r.name}` }))}
             />
           </Form.Item>
+        )}
+        {type === 'Network' && (
+          equipment
+            ? <NetworkPortsSection equipmentId={equipment.id} />
+            : <div style={{ marginBottom: 24, color: '#8c8c8c' }}>ບັນທຶກອຸປະກອນກ່ອນ ຈຶ່ງຈະຈັດການ port ໄດ້</div>
         )}
         <Form.Item name="categoryId" label="ໝວດໝູ່">
           <Select

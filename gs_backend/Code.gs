@@ -42,7 +42,8 @@ function doPost(e) {
       workTypes:    handleWorkTypes,
       rooms:        handleRooms,
       roomBorrowing: handleRoomBorrowing,
-      roomComputers: handleRoomComputers
+      roomComputers: handleRoomComputers,
+      networkPorts: handleNetworkPorts
     };
 
     if (!handlers[action]) {

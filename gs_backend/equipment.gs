@@ -26,7 +26,10 @@ function handleEquipment(method, params) {
     return updateResult;
   }
 
-  if (method === 'delete')    return table.delete(params.id);
+  if (method === 'delete') {
+    deleteNetworkPortsByEquipmentId(params.id);
+    return table.delete(params.id);
+  }
 
   if (method === 'updateStatus') {
     var statusResult = table.update(params.id, { status: params.status });

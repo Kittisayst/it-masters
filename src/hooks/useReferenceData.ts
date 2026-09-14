@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { categoriesApi, departmentsApi, employeesApi, usersApi, equipmentApi, workTypesApi, roomsApi, roomComputersApi } from '../services/api';
-import type { Category, Department, Employee, User, Equipment, WorkType, Room, RoomComputer } from '../types';
+import { categoriesApi, departmentsApi, employeesApi, usersApi, equipmentApi, workTypesApi, roomsApi, roomComputersApi, networkPortsApi } from '../services/api';
+import type { Category, Department, Employee, User, Equipment, WorkType, Room, RoomComputer, NetworkPort } from '../types';
 
 export function useCategories() {
   return useQuery({
@@ -54,6 +54,31 @@ export function useRoomComputers() {
     queryKey: ['roomComputers'],
     queryFn: async () => unwrap(await roomComputersApi.findAll(), [] as RoomComputer[]),
   });
+}
+
+export function useNetworkPorts() {
+  return useQuery({
+    queryKey: ['networkPorts'],
+    queryFn: async () => unwrap(await networkPortsApi.find({}), [] as NetworkPort[]),
+  });
+}
+
+export function useNetworkPortsForEquipment(equipmentId: string | undefined) {
+  return useQuery({
+    queryKey: ['networkPorts', 'equipment', equipmentId],
+    queryFn: async () => unwrap(await networkPortsApi.find({ equipmentId }), [] as NetworkPort[]),
+    enabled: !!equipmentId,
+  });
+}
+
+export function summarizeNetworkPorts(ports: NetworkPort[]): Record<string, { used: number; total: number }> {
+  const summary: Record<string, { used: number; total: number }> = {};
+  ports.forEach((p) => {
+    const s = (summary[p.equipmentId] ??= { used: 0, total: 0 });
+    s.total++;
+    if (p.status === 'ໃຊ້ງານ') s.used++;
+  });
+  return summary;
 }
 
 export function useWorkTypes() {

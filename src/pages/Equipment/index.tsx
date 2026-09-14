@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import { equipmentApi } from '../../services/api';
-import { useUsers, useCategories, useRooms, useRoomComputers } from '../../hooks/useReferenceData';
+import { useUsers, useCategories, useRooms, useRoomComputers, useNetworkPorts, summarizeNetworkPorts } from '../../hooks/useReferenceData';
 import StatusBadge from '../../components/common/StatusBadge';
 import EquipmentForm from './EquipmentForm';
 import SkeletonTable from '../../components/common/SkeletonTable';
@@ -27,6 +27,7 @@ export default function EquipmentPage() {
   const { data: categories = [] } = useCategories();
   const { data: rooms = [] } = useRooms();
   const { data: roomComputers = [] } = useRoomComputers();
+  const { data: networkPorts = [] } = useNetworkPorts();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['equipment', filters],
@@ -49,6 +50,8 @@ export default function EquipmentPage() {
   const roomMap = Object.fromEntries(rooms.map((r) => [r.id, r]));
   const roomByEquipmentId = Object.fromEntries(roomComputers.map((rc) => [rc.equipmentId, roomMap[rc.roomId]]));
 
+  const portSummaryByEquipmentId = summarizeNetworkPorts(networkPorts);
+
   const columns = [
     { title: 'ລະຫັດ', dataIndex: 'code', width: 90 },
     { title: 'ຊື່ອຸປະກອນ', dataIndex: 'name' },
@@ -60,6 +63,14 @@ export default function EquipmentPage() {
         if (row.type !== 'ຄອມ') return '-';
         const room = roomByEquipmentId[id];
         return room ? `${room.code} - ${room.name}` : '-';
+      },
+    },
+    {
+      title: 'Port', dataIndex: 'id', width: 90,
+      render: (id: string, row: Equipment) => {
+        if (row.type !== 'Network') return '-';
+        const s = portSummaryByEquipmentId[id];
+        return s ? `${s.used}/${s.total}` : '0/0';
       },
     },
     { title: 'Serial', dataIndex: 'serialNumber', width: 130 },

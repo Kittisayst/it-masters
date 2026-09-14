@@ -19,6 +19,7 @@ import {
   KeyOutlined,
   LockOutlined,
   BulbOutlined,
+  ClusterOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useThemeStore } from '../../store/useThemeStore';
@@ -32,6 +33,7 @@ const navItems = [
   { key: '/dashboard',    icon: <DashboardOutlined />, label: 'ໜ້າຫຼັກ' },
   { key: '/work-records', icon: <FileTextOutlined />,  label: 'ໜ້າວຽກປະຈຳວັນ' },
   { key: '/equipment',    icon: <LaptopOutlined />,    label: 'ອຸປະກອນ IT' },
+  { key: '/network',      icon: <ClusterOutlined />,   label: 'ເຄືອຂ່າຍ' },
   { key: '/borrowing',    icon: <InboxOutlined />,     label: 'ຢືມອຸປະກອນ' },
   { key: '/room-borrowing', icon: <LockOutlined />,    label: 'ຢືມກະແຈຫ້ອງຄອມ' },
   { key: '/disbursement', icon: <ExportOutlined />,    label: 'ເບີກຈ່າຍ' },

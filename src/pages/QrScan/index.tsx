@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Descriptions, Popconfirm, Space, Spin, Tag, Typography } from 'antd';
+import { Button, Card, Descriptions, Popconfirm, Space, Spin, Table, Tag, Typography } from 'antd';
 import {
   CheckCircleOutlined,
   ScanOutlined,
@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import PageHeader from '../../components/common/PageHeader';
 import { equipmentApi } from '../../services/api';
+import { useNetworkPortsForEquipment } from '../../hooks/useReferenceData';
 import type { Equipment } from '../../types';
 
 const { Title, Text } = Typography;
@@ -141,6 +142,52 @@ function ActionPanel({
   );
 }
 
+// ── Network port list (view-only) ───────────────────────────────────────────────
+function NetworkPortPanel({ equipment, onReset }: { equipment: Equipment; onReset: () => void }) {
+  const { data: ports = [], isLoading } = useNetworkPortsForEquipment(equipment.id);
+
+  const columns = [
+    { title: 'Port', dataIndex: 'portNumber', width: 60 },
+    { title: 'ຕໍ່ໄປໃສ', dataIndex: 'connectsTo', render: (v: string) => v || '-' },
+    {
+      title: 'ສະຖານະ', dataIndex: 'status', width: 110,
+      render: (v: string) => (
+        <Tag color={v === 'ໃຊ້ງານ' ? 'processing' : v === 'ບໍ່ໃຊ້ງານ' ? 'default' : 'success'}>{v}</Tag>
+      ),
+    },
+  ];
+
+  return (
+    <div style={{ maxWidth: 480, margin: '0 auto' }}>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <Title level={5} style={{ margin: 0 }}>{equipment.name}</Title>
+          <Tag color="blue">{equipment.type}</Tag>
+        </div>
+        <Descriptions column={1} size="small" styles={{ label: { color: '#8c8c8c', width: 120 } }}>
+          <Descriptions.Item label="ລະຫັດ">{equipment.code}</Descriptions.Item>
+          <Descriptions.Item label="ສະຖານທີ">{equipment.location || '-'}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+
+      <Card size="small" title="ລາຍການ Port" style={{ marginBottom: 16 }}>
+        <Table
+          size="small"
+          rowKey="id"
+          columns={columns as never}
+          dataSource={ports}
+          loading={isLoading}
+          pagination={false}
+        />
+      </Card>
+
+      <Button icon={<ScanOutlined />} block onClick={onReset}>
+        ສະແກໃໝ່
+      </Button>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 type ScanState =
   | { phase: 'scanning' }
@@ -188,7 +235,9 @@ export default function QrScanPage() {
         )}
 
         {state.phase === 'found' && (
-          <ActionPanel equipment={state.equipment} onReset={reset} />
+          state.equipment.type === 'Network'
+            ? <NetworkPortPanel equipment={state.equipment} onReset={reset} />
+            : <ActionPanel equipment={state.equipment} onReset={reset} />
         )}
 
         {state.phase === 'notfound' && (
