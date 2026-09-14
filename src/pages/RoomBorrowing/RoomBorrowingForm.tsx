@@ -22,7 +22,7 @@ export default function RoomBorrowingForm({ open, onClose, onSuccess }: Props) {
   useEffect(() => {
     if (open) {
       form.resetFields();
-      form.setFieldsValue({ borrowedAt: dayjs() });
+      form.setFieldsValue({ borrowedAt: dayjs(), dueDate: dayjs() });
     }
   }, [open, form]);
 
@@ -72,7 +72,7 @@ export default function RoomBorrowingForm({ open, onClose, onSuccess }: Props) {
         <Form.Item name="borrowedAt" label="ວັນ-ເວລາຢືມ" rules={[{ required: true }]}>
           <DatePicker showTime style={{ width: '100%' }} format="DD/MM/YYYY HH:mm" />
         </Form.Item>
-        <Form.Item name="dueDate" label="ກຳນົດສົ່ງຄືນ">
+        <Form.Item name="dueDate" label="ກຳນົດສົ່ງຄືນ" rules={[{ required: true, message: 'ກະລຸນາເລືອກກຳນົດສົ່ງຄືນ' }]}>
           <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
         </Form.Item>
         <Form.Item name="purpose" label="ຈຸດປະສົງ">

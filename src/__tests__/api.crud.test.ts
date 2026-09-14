@@ -314,6 +314,85 @@ describe('Borrowing CRUD', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+// RoomBorrowing
+// ════════════════════════════════════════════════════════════════════════════
+describe('RoomBorrowing CRUD', () => {
+  beforeAll(() => sleep(2000));
+  let employeeId: string;
+  let roomId: string;
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const todayStr = nowIso.split('T')[0];
+  const yesterdayStr = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  test('setup — insert employee and room', async () => {
+    const emp = await call<{ id: string }>('employees', 'insert', {
+      fullName: '__TEST_ROOMBORROW_EMP__',
+      position: 'Tester',
+      phone: '020-0000000',
+    });
+    expect(emp.success).toBe(true);
+    employeeId = emp.data.id;
+
+    const room = await call<{ id: string }>('rooms', 'insert', {
+      code: 'TST-ROOM',
+      name: '__TEST_ROOM__',
+      location: 'ຊັ້ນ 1',
+      status: 'ປົກກະຕິ',
+    });
+    expect(room.success).toBe(true);
+    roomId = room.data.id;
+  });
+
+  test('insert — dueDate omitted defaults to borrowedAt date', async () => {
+    const res = await call<{ id: string; dueDate: string }>('roomBorrowing', 'insert', {
+      employeeId,
+      roomId,
+      borrowedAt: nowIso,
+    });
+    expect(res.success).toBe(true);
+    expect(res.data.dueDate).toBe(todayStr);
+
+    const del = await call('roomBorrowing', 'delete', { id: res.data.id });
+    expect(del.success).toBe(true);
+  });
+
+  test('overdue borrowing is derived and self-healed on read', { timeout: 60000 }, async () => {
+    const inserted = await call<{ id: string }>('roomBorrowing', 'insert', {
+      employeeId,
+      roomId,
+      borrowedAt: nowIso,
+      dueDate: yesterdayStr,
+    });
+    expect(inserted.success).toBe(true);
+    const id = inserted.data.id;
+
+    const overdue = await call<{ id: string; status: string }[]>('roomBorrowing', 'find', { status: 'ເກີນກຳນົດ' });
+    expect(overdue.success).toBe(true);
+    const rec = overdue.data.find((r) => r.id === id);
+    expect(rec?.status).toBe('ເກີນກຳນົດ');
+
+    const returned = await call('roomBorrowing', 'return', { id });
+    expect(returned.success).toBe(true);
+
+    const afterReturn = await call<{ id: string; status: string }[]>('roomBorrowing', 'find', { status: 'ເກີນກຳນົດ' });
+    expect(afterReturn.success).toBe(true);
+    expect(afterReturn.data.some((r) => r.id === id)).toBe(false);
+
+    const del = await call('roomBorrowing', 'delete', { id });
+    expect(del.success).toBe(true);
+  });
+
+  test('cleanup — delete test room and employee', async () => {
+    const room = await call('rooms', 'delete', { id: roomId });
+    expect(room.success).toBe(true);
+    const emp = await call('employees', 'delete', { id: employeeId });
+    expect(emp.success).toBe(true);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 // Disbursement
 // ════════════════════════════════════════════════════════════════════════════
 describe('Disbursement CRUD', () => {

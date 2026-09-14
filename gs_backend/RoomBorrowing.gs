@@ -19,6 +19,29 @@ function attachRoomAndEmployee(result, roomsTable, employeesTable) {
   return result;
 }
 
+// Derive ເກີນກຳນົດ against today's date, skipping records with no dueDate,
+// and self-heal the sheet so it stays accurate without a separate scheduled job.
+// See docs/adr/0002-derived-overdue-status-for-room-borrowing.md.
+//
+// dueDate comes back from Sheets as a real Date object (Sheets auto-converts
+// date-shaped strings on write), serialized as its default toString(), NOT the
+// original 'YYYY-MM-DD' — so this must parse with `new Date(...)`, never compare
+// as strings.
+function applyOverdueStatus(result, records) {
+  if (!result.success) return result;
+  var todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  result.data.forEach(function(rec) {
+    if (rec.status !== 'ກຳລັງຢືມ' || !rec.dueDate) return;
+    var due = new Date(rec.dueDate);
+    if (!isNaN(due.getTime()) && due < todayStart) {
+      rec.status = 'ເກີນກຳນົດ';
+      records.update(rec.id, { status: 'ເກີນກຳນົດ' });
+    }
+  });
+  return result;
+}
+
 function handleRoomBorrowing(method, params) {
   var records   = getRoomBorrowingsTable();
   var rooms     = getRoomsTable();
@@ -26,15 +49,26 @@ function handleRoomBorrowing(method, params) {
 
   // ------ READ ------
   if (method === 'findAll') {
-    return attachRoomAndEmployee(records.orderBy('borrowedAt', 'DESC').get(), rooms, employees);
+    var allResult = records.orderBy('borrowedAt', 'DESC').get();
+    applyOverdueStatus(allResult, records);
+    return attachRoomAndEmployee(allResult, rooms, employees);
   }
 
   if (method === 'find') {
+    var filterStatus = params.status;
     var q = records;
-    if (params.status)     q = q.where('status', '=', params.status);
+    // ເກີນກຳນົດ is derived, not stored — query active records and filter after computing.
+    if (filterStatus && filterStatus !== 'ເກີນກຳນົດ') q = q.where('status', '=', filterStatus);
+    else if (filterStatus === 'ເກີນກຳນົດ') q = q.where('status', '=', 'ກຳລັງຢືມ');
     if (params.employeeId) q = q.where('employeeId', '=', params.employeeId);
     if (params.roomId)     q = q.where('roomId', '=', params.roomId);
-    return attachRoomAndEmployee(q.orderBy('borrowedAt', 'DESC').get(), rooms, employees);
+
+    var result = q.orderBy('borrowedAt', 'DESC').get();
+    applyOverdueStatus(result, records);
+    if (filterStatus === 'ເກີນກຳນົດ' && result.success) {
+      result.data = result.data.filter(function(r) { return r.status === 'ເກີນກຳນົດ'; });
+    }
+    return attachRoomAndEmployee(result, rooms, employees);
   }
 
   if (method === 'findById') return records.findById(params.id);
@@ -51,7 +85,7 @@ function handleRoomBorrowing(method, params) {
       employeeId: params.employeeId,
       roomId:     params.roomId,
       borrowedAt: params.borrowedAt,
-      dueDate:    params.dueDate || '',
+      dueDate:    params.dueDate || (params.borrowedAt ? params.borrowedAt.split('T')[0] : ''),
       recordedBy: params.recordedBy || '',
       purpose:    params.purpose || '',
       status:     'ກຳລັງຢືມ'
@@ -76,21 +110,6 @@ function handleRoomBorrowing(method, params) {
 
     rooms.update(existing.data.roomId, { status: 'ປົກກະຕິ' });
     return updateResult;
-  }
-
-  // ------ OVERDUE ------
-  if (method === 'checkOverdue') {
-    var today = new Date().toISOString().split('T')[0];
-    var overdueList = records
-      .where('status', '=', 'ກຳລັງຢືມ')
-      .where('dueDate', '<', today)
-      .get();
-    if (overdueList.success) {
-      overdueList.data.forEach(function(r) {
-        records.update(r.id, { status: 'ເກີນກຳນົດ' });
-      });
-    }
-    return { success: true, data: { updated: overdueList.success ? overdueList.data.length : 0 } };
   }
 
   // ------ DELETE ------
