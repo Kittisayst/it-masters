@@ -246,6 +246,114 @@ describe('Equipment CRUD', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+// RoomComputer
+// ════════════════════════════════════════════════════════════════════════════
+describe('RoomComputer CRUD', () => {
+  let equipId: string;
+  let roomAId: string;
+  let roomBId: string;
+
+  test('setup — insert a computer and two rooms', async () => {
+    const equip = await call<{ id: string }>('equipment', 'insert', {
+      code: 'TST-RC-001',
+      name: '__TEST_RC_COMPUTER__',
+      type: 'ຄອມ',
+      status: 'ປົກກະຕິ',
+    });
+    expect(equip.success).toBe(true);
+    equipId = equip.data.id;
+
+    const roomA = await call<{ id: string }>('rooms', 'insert', { code: 'RC-A', name: '__TEST_RC_ROOM_A__', location: 'x', status: 'ປົກກະຕິ' });
+    expect(roomA.success).toBe(true);
+    roomAId = roomA.data.id;
+
+    const roomB = await call<{ id: string }>('rooms', 'insert', { code: 'RC-B', name: '__TEST_RC_ROOM_B__', location: 'x', status: 'ປົກກະຕິ' });
+    expect(roomB.success).toBe(true);
+    roomBId = roomB.data.id;
+  });
+
+  test('assign — computerCount reflects the assignment', async () => {
+    const assign = await call('roomComputers', 'assign', { equipmentId: equipId, roomId: roomAId });
+    expect(assign.success).toBe(true);
+
+    const room = await call<{ computerCount: number }>('rooms', 'findById', { id: roomAId });
+    expect(room.success).toBe(true);
+    expect(room.data.computerCount).toBe(1);
+  });
+
+  test('reassign — old room count decreases, new room increases, no duplicate row', async () => {
+    const assign = await call('roomComputers', 'assign', { equipmentId: equipId, roomId: roomBId });
+    expect(assign.success).toBe(true);
+
+    const oldRoom = await call<{ computerCount: number }>('rooms', 'findById', { id: roomAId });
+    expect(oldRoom.data.computerCount).toBe(0);
+
+    const newRoom = await call<{ computerCount: number }>('rooms', 'findById', { id: roomBId });
+    expect(newRoom.data.computerCount).toBe(1);
+
+    const rows = await call<{ id: string }[]>('roomComputers', 'find', { equipmentId: equipId });
+    expect(rows.success).toBe(true);
+    expect(rows.data.length).toBe(1);
+  });
+
+  test('temporary status (ຖືກຢືມ) leaves the assignment untouched', async () => {
+    const upd = await call('equipment', 'update', { id: equipId, data: { status: 'ຖືກຢືມ' } });
+    expect(upd.success).toBe(true);
+
+    const rows = await call<{ id: string }[]>('roomComputers', 'find', { equipmentId: equipId });
+    expect(rows.data.length).toBe(1);
+
+    const room = await call<{ computerCount: number }>('rooms', 'findById', { id: roomBId });
+    expect(room.data.computerCount).toBe(1);
+  });
+
+  test('status ຖືກເບີກ auto-clears the assignment', async () => {
+    const upd = await call('equipment', 'update', { id: equipId, data: { status: 'ຖືກເບີກ' } });
+    expect(upd.success).toBe(true);
+
+    const rows = await call<{ id: string }[]>('roomComputers', 'find', { equipmentId: equipId });
+    expect(rows.data.length).toBe(0);
+
+    const room = await call<{ computerCount: number }>('rooms', 'findById', { id: roomBId });
+    expect(room.data.computerCount).toBe(0);
+  });
+
+  test('type change away from ຄອມ auto-clears the assignment', async () => {
+    await call('equipment', 'update', { id: equipId, data: { status: 'ປົກກະຕິ' } });
+    await call('roomComputers', 'assign', { equipmentId: equipId, roomId: roomAId });
+    const before = await call<{ id: string }[]>('roomComputers', 'find', { equipmentId: equipId });
+    expect(before.data.length).toBe(1);
+
+    const upd = await call('equipment', 'update', { id: equipId, data: { type: 'Printer' } });
+    expect(upd.success).toBe(true);
+
+    const after = await call<{ id: string }[]>('roomComputers', 'find', { equipmentId: equipId });
+    expect(after.data.length).toBe(0);
+
+    const room = await call<{ computerCount: number }>('rooms', 'findById', { id: roomAId });
+    expect(room.data.computerCount).toBe(0);
+  });
+
+  test('deleting a room cascades delete of its RoomComputer rows', async () => {
+    await call('equipment', 'update', { id: equipId, data: { type: 'ຄອມ' } });
+    await call('roomComputers', 'assign', { equipmentId: equipId, roomId: roomBId });
+    const before = await call<{ id: string }[]>('roomComputers', 'find', { equipmentId: equipId });
+    expect(before.data.length).toBe(1);
+
+    const del = await call('rooms', 'delete', { id: roomBId });
+    expect(del.success).toBe(true);
+
+    const after = await call<{ id: string }[]>('roomComputers', 'find', { equipmentId: equipId });
+    expect(after.data.length).toBe(0);
+  });
+
+  test('cleanup — delete computer and remaining room', async () => {
+    await call('equipment', 'delete', { id: equipId });
+    await call('rooms', 'delete', { id: roomAId });
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 // Borrowing
 // ════════════════════════════════════════════════════════════════════════════
 describe('Borrowing CRUD', () => {

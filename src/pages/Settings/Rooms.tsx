@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Select, Space } from 'antd';
+import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/common/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { roomsApi } from '../../services/api';
-import { useEmployees } from '../../hooks/useReferenceData';
+import { useEmployees, useRoomComputers, useEquipmentList } from '../../hooks/useReferenceData';
 import SkeletonTable from '../../components/common/SkeletonTable';
 import ResponsiveTable from '../../components/common/ResponsiveTable';
 import StatusBadge from '../../components/common/StatusBadge';
-import type { Room } from '../../types';
+import type { Room, Equipment } from '../../types';
 
 export default function RoomsSettings() {
   const qc = useQueryClient();
@@ -23,6 +23,17 @@ export default function RoomsSettings() {
   const { data = [], isLoading } = useQuery({
     queryKey: ['rooms'],
     queryFn: async () => (await roomsApi.findAll()).data as Room[] ?? [],
+  });
+
+  const { data: roomComputers = [] } = useRoomComputers();
+  const { data: equipmentList = [] } = useEquipmentList();
+
+  const equipmentMap = Object.fromEntries(equipmentList.map((e) => [e.id, e]));
+  const computersByRoomId: Record<string, Equipment[]> = {};
+  roomComputers.forEach((rc) => {
+    const equip = equipmentMap[rc.equipmentId];
+    if (!equip) return;
+    (computersByRoomId[rc.roomId] ??= []).push(equip);
   });
 
   const saveMutation = useMutation({
@@ -51,6 +62,13 @@ export default function RoomsSettings() {
     { title: 'ຊື່ຫ້ອງ', dataIndex: 'name' },
     { title: 'ສະຖານທີ່', dataIndex: 'location' },
     { title: 'ຈຳນວນເຄື່ອງ', dataIndex: 'computerCount', width: 110 },
+    {
+      title: 'ຄອມທີ່ຢູ່ຫ້ອງນີ້', dataIndex: 'id',
+      render: (id: string) => {
+        const list = computersByRoomId[id];
+        return list && list.length > 0 ? list.map((e) => e.code).join(', ') : '-';
+      },
+    },
     { title: 'ຜູ້ຮັບຜິດຊອບ', dataIndex: 'responsiblePerson', render: (v: string) => empMap[v] ?? '-' },
     { title: 'ສະຖານະ', dataIndex: 'status', render: (v: string) => <StatusBadge status={v} /> },
     {
@@ -94,9 +112,6 @@ export default function RoomsSettings() {
           </Form.Item>
           <Form.Item name="location" label="ສະຖານທີ່ (ຕຶກ/ຊັ້ນ)">
             <Input />
-          </Form.Item>
-          <Form.Item name="computerCount" label="ຈຳນວນເຄື່ອງຄອມ">
-            <InputNumber style={{ width: '100%' }} min={0} />
           </Form.Item>
           <Form.Item name="responsiblePerson" label="ຜູ້ຮັບຜິດຊອບ">
             <Select

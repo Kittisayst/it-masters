@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
 import { toast } from 'sonner';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { equipmentApi } from '../../services/api';
-import { useUsers, useCategories } from '../../hooks/useReferenceData';
+import { equipmentApi, roomComputersApi } from '../../services/api';
+import { useUsers, useCategories, useRooms } from '../../hooks/useReferenceData';
 import { useAuthStore } from '../../store/useAuthStore';
-import type { Equipment } from '../../types';
+import type { Equipment, RoomComputer } from '../../types';
 
 interface Props {
   open: boolean;
@@ -23,6 +23,17 @@ export default function EquipmentForm({ open, equipment, onClose, onSuccess }: P
   const currentUser = useAuthStore((s) => s.user);
   const { data: users = [] } = useUsers();
   const { data: categories = [] } = useCategories();
+  const { data: rooms = [] } = useRooms();
+  const type = Form.useWatch('type', form);
+
+  const { data: assignment } = useQuery({
+    queryKey: ['roomComputers', 'equipment', equipment?.id],
+    queryFn: async () => {
+      const res = await roomComputersApi.find({ equipmentId: equipment!.id });
+      return ((res.data as RoomComputer[]) ?? [])[0] ?? null;
+    },
+    enabled: open && !!equipment,
+  });
 
   useEffect(() => {
     if (open) {
@@ -39,15 +50,31 @@ export default function EquipmentForm({ open, equipment, onClose, onSuccess }: P
     }
   }, [open, equipment, form, currentUser]);
 
+  useEffect(() => {
+    if (open && equipment) {
+      form.setFieldValue('roomId', assignment?.roomId);
+    }
+  }, [open, equipment, assignment, form]);
+
   const mutation = useMutation({
-    mutationFn: (values: Record<string, unknown>) => {
+    mutationFn: async (values: Record<string, unknown>) => {
+      const { roomId, ...equipmentValues } = values;
       const data = {
-        ...values,
+        ...equipmentValues,
         receivedDate: values.receivedDate ? (values.receivedDate as dayjs.Dayjs).format('YYYY-MM-DD') : '',
       };
-      return equipment
-        ? equipmentApi.update(equipment.id, data)
-        : equipmentApi.insert(data);
+      const res = equipment
+        ? await equipmentApi.update(equipment.id, data)
+        : await equipmentApi.insert(data);
+      if (!res.success) return res;
+
+      const equipmentId = equipment ? equipment.id : (res.data as Equipment).id;
+      if (roomId) {
+        await roomComputersApi.assign({ equipmentId, roomId, recordedBy: currentUser?.id ?? '' });
+      } else if (equipment) {
+        await roomComputersApi.unassign(equipmentId);
+      }
+      return res;
     },
     onSuccess: (res) => {
       if (res.success) { toast.success(equipment ? 'ແກ້ໄຂສຳເລັດ' : 'ເພີ່ມສຳເລັດ'); onSuccess(); }
@@ -73,8 +100,24 @@ export default function EquipmentForm({ open, equipment, onClose, onSuccess }: P
           <Input />
         </Form.Item>
         <Form.Item name="type" label="ປະເພດ" rules={[{ required: true }]}>
-          <Select options={TYPES.map((t) => ({ value: t, label: t }))} />
+          <Select
+            options={TYPES.map((t) => ({ value: t, label: t }))}
+            onChange={(v: string) => {
+              if (v !== 'ຄອມ') form.setFieldValue('roomId', undefined);
+            }}
+          />
         </Form.Item>
+        {type === 'ຄອມ' && (
+          <Form.Item name="roomId" label="ຫ້ອງຄອມ">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="ເລືອກຫ້ອງ (ຖ້າມີ)"
+              options={rooms.map((r) => ({ value: r.id, label: `${r.code} - ${r.name}` }))}
+            />
+          </Form.Item>
+        )}
         <Form.Item name="categoryId" label="ໝວດໝູ່">
           <Select
             allowClear

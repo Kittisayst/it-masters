@@ -19,11 +19,19 @@ function handleEquipment(method, params) {
 
   if (method === 'findById')  return table.findById(params.id);
   if (method === 'insert')    return table.insert(params);
-  if (method === 'update')    return table.update(params.id, params.data);
+
+  if (method === 'update') {
+    var updateResult = table.update(params.id, params.data);
+    if (updateResult.success) maybeUnassignRoomComputer(params.id, params.data);
+    return updateResult;
+  }
+
   if (method === 'delete')    return table.delete(params.id);
 
   if (method === 'updateStatus') {
-    return table.update(params.id, { status: params.status });
+    var statusResult = table.update(params.id, { status: params.status });
+    if (statusResult.success) maybeUnassignRoomComputer(params.id, { status: params.status });
+    return statusResult;
   }
 
   if (method === 'stats') {
@@ -41,4 +49,15 @@ function handleEquipment(method, params) {
   }
 
   return { success: false, error: 'Unknown equipment method: ' + method };
+}
+
+// Keeps RoomComputer honest (see docs/adr/0003): a computer that's disbursed,
+// decommissioned, or recategorized away from 'ຄອມ' no longer occupies a room.
+// ຖືກຢືມ/ສ້ອມແປງ are temporary absences and are intentionally left untouched.
+function maybeUnassignRoomComputer(equipmentId, changes) {
+  var statusCleared = changes.status === 'ຖືກເບີກ' || changes.status === 'ປົດລຶບ';
+  var typeChangedAway = changes.type !== undefined && changes.type !== 'ຄອມ';
+  if (statusCleared || typeChangedAway) {
+    unassignRoomComputerByEquipmentId(equipmentId);
+  }
 }

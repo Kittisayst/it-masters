@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import { equipmentApi } from '../../services/api';
-import { useUsers, useCategories } from '../../hooks/useReferenceData';
+import { useUsers, useCategories, useRooms, useRoomComputers } from '../../hooks/useReferenceData';
 import StatusBadge from '../../components/common/StatusBadge';
 import EquipmentForm from './EquipmentForm';
 import SkeletonTable from '../../components/common/SkeletonTable';
@@ -25,6 +25,8 @@ export default function EquipmentPage() {
 
   const { data: users = [] } = useUsers();
   const { data: categories = [] } = useCategories();
+  const { data: rooms = [] } = useRooms();
+  const { data: roomComputers = [] } = useRoomComputers();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['equipment', filters],
@@ -44,12 +46,22 @@ export default function EquipmentPage() {
 
   const userMap = Object.fromEntries(users.map((u) => [u.id, u.fullName]));
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+  const roomMap = Object.fromEntries(rooms.map((r) => [r.id, r]));
+  const roomByEquipmentId = Object.fromEntries(roomComputers.map((rc) => [rc.equipmentId, roomMap[rc.roomId]]));
 
   const columns = [
     { title: 'ລະຫັດ', dataIndex: 'code', width: 90 },
     { title: 'ຊື່ອຸປະກອນ', dataIndex: 'name' },
     { title: 'ປະເພດ', dataIndex: 'type', width: 100 },
     { title: 'ໝວດໝູ່', dataIndex: 'categoryId', width: 120, render: (v: string) => categoryMap[v] ?? '-' },
+    {
+      title: 'ຫ້ອງຄອມ', dataIndex: 'id', width: 130,
+      render: (id: string, row: Equipment) => {
+        if (row.type !== 'ຄອມ') return '-';
+        const room = roomByEquipmentId[id];
+        return room ? `${room.code} - ${room.name}` : '-';
+      },
+    },
     { title: 'Serial', dataIndex: 'serialNumber', width: 130 },
     { title: 'ສະຖານທີ', dataIndex: 'location' },
     { title: 'ສະຖານະ', dataIndex: 'status', render: (v: string) => <StatusBadge status={v} /> },
@@ -75,6 +87,7 @@ export default function EquipmentPage() {
       ຊື່ອຸປະກອນ: e.name,
       ປະເພດ: e.type,
       ໝວດໝູ່: categoryMap[e.categoryId ?? ''] ?? '',
+      ຫ້ອງຄອມ: e.type === 'ຄອມ' ? (roomByEquipmentId[e.id] ? `${roomByEquipmentId[e.id].code} - ${roomByEquipmentId[e.id].name}` : '') : '',
       'Serial Number': e.serialNumber,
       ສະຖານທີ: e.location,
       ສະຖານະ: e.status,
@@ -132,7 +145,13 @@ export default function EquipmentPage() {
         open={formOpen}
         equipment={editing}
         onClose={() => setFormOpen(false)}
-        onSuccess={() => { setFormOpen(false); qc.invalidateQueries({ queryKey: ['equipment'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }}
+        onSuccess={() => {
+          setFormOpen(false);
+          qc.invalidateQueries({ queryKey: ['equipment'] });
+          qc.invalidateQueries({ queryKey: ['dashboard'] });
+          qc.invalidateQueries({ queryKey: ['roomComputers'] });
+          qc.invalidateQueries({ queryKey: ['rooms'] });
+        }}
       />
     </div>
   );

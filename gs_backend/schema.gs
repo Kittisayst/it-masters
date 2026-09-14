@@ -171,6 +171,16 @@ function getRoomsTable() {
   });
 }
 
+function getRoomComputersTable() {
+  return getDb().table('RoomComputers').schema({
+    id:          { type: 'string' },
+    equipmentId: { type: 'string', required: true },
+    roomId:      { type: 'string', required: true },
+    assignedAt:  { type: 'string' },
+    recordedBy:  { type: 'string' }
+  });
+}
+
 function getRoomBorrowingsTable() {
   return getDb().table('RoomBorrowings').schema({
     id:         { type: 'string' },
@@ -263,6 +273,11 @@ function runMigrations() {
       version: '012', name: 'create_room_borrowings',
       up: function(db) { db.createTable('RoomBorrowings', ['id','employeeId','roomId','borrowedAt','dueDate','returnedAt','recordedBy','purpose','status']); },
       down: function(db) { db.dropTable('RoomBorrowings'); }
+    },
+    {
+      version: '013', name: 'create_room_computers',
+      up: function(db) { db.createTable('RoomComputers', ['id','equipmentId','roomId','assignedAt','recordedBy']); },
+      down: function(db) { db.dropTable('RoomComputers'); }
     }
   ];
   var result = SheetORM.migrate(SPREADSHEET_ID, migrations);
@@ -374,6 +389,20 @@ function runMigration011_012_Rooms() {
       version: '012', name: 'create_room_borrowings',
       up: function(db) { db.createTable('RoomBorrowings', ['id','employeeId','roomId','borrowedAt','dueDate','returnedAt','recordedBy','purpose','status']); },
       down: function(db) { db.dropTable('RoomBorrowings'); }
+    }
+  ]);
+  Logger.log(JSON.stringify(result));
+}
+
+// ====================================================
+// Migration 013 only — run if sheet RoomComputers missing
+// ====================================================
+function runMigration013_RoomComputers() {
+  var result = SheetORM.migrate(SPREADSHEET_ID, [
+    {
+      version: '013', name: 'create_room_computers',
+      up: function(db) { db.createTable('RoomComputers', ['id','equipmentId','roomId','assignedAt','recordedBy']); },
+      down: function(db) { db.dropTable('RoomComputers'); }
     }
   ]);
   Logger.log(JSON.stringify(result));

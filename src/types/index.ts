@@ -144,6 +144,14 @@ export interface RoomBorrowing {
   employee?: Employee | null;
 }
 
+export interface RoomComputer {
+  id: string;
+  equipmentId: string;
+  roomId: string;
+  assignedAt?: string;
+  recordedBy?: string;
+}
+
 export interface DashboardStats {
   workToday: number;
   equipment: {

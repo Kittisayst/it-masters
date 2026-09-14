@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, Category, Department, Employee, Equipment, ItInfo, User, WorkRecord, WorkType, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats, Room, RoomBorrowing } from '../types';
+import type { ApiResponse, Category, Department, Employee, Equipment, ItInfo, User, WorkRecord, WorkType, BorrowingHeader, BorrowingDetail, DisbursementHeader, DisbursementDetail, DashboardStats, Room, RoomBorrowing, RoomComputer } from '../types';
 
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string;
 
@@ -121,6 +121,14 @@ export const roomBorrowingApi = {
   return: (id: string, returnedAt?: string) => callApi('roomBorrowing', 'return', { id, returnedAt }),
   delete: (id: string) => callApi('roomBorrowing', 'delete', { id }),
   stats: () => callApi('roomBorrowing', 'stats'),
+};
+
+// Room Computers (ການຈັດວາງຄອມ)
+export const roomComputersApi = {
+  findAll: () => callApi<RoomComputer[]>('roomComputers', 'findAll'),
+  find: (params: Record<string, unknown>) => callApi<RoomComputer[]>('roomComputers', 'find', params),
+  assign: (data: Record<string, unknown>) => callApi('roomComputers', 'assign', data),
+  unassign: (equipmentId: string) => callApi('roomComputers', 'unassign', { equipmentId }),
 };
 
 // IT Info Registry
